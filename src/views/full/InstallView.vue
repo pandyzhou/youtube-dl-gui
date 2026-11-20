@@ -1,7 +1,7 @@
 <template>
   <div class="mx-auto flex min-h-full w-full max-w-2xl flex-col gap-6 px-6 py-10">
     <div class="flex items-center gap-4">
-      <img src="/icon.png" alt="" class="size-12 shrink-0 rounded-xl" />
+      <img :src="iconUrl" alt="" class="size-12 shrink-0 rounded-xl" />
       <div class="min-w-0">
         <h1 v-if="isInstalling" class="text-xl font-semibold">{{ t('install.title.installing') }}</h1>
         <h1 v-else-if="installPartialFail" class="text-xl font-semibold">{{ t('install.title.failed') }}</h1>
@@ -40,6 +40,9 @@ import ToolCard from '../../components/tool-card/ToolCard.vue';
 import { useI18n } from 'vue-i18n';
 
 const { t } = useI18n();
+// Served from public/. Bound (not a static src) so the SFC compiler does not turn it into an import.
+const iconUrl = '/icon.png';
+
 const binariesStore = useBinariesStore();
 const router = useRouter();
 

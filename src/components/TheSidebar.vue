@@ -4,7 +4,7 @@
     class="flex w-48 shrink-0 flex-col border-r border-line bg-base-300 px-3 pt-4 pb-3"
   >
     <div class="mb-5 flex items-center gap-2.5 px-2">
-      <img src="/icon.png" alt="" class="size-8 shrink-0 rounded-lg" />
+      <img :src="iconUrl" alt="" class="size-8 shrink-0 rounded-lg" />
       <span class="min-w-0 text-sm leading-tight font-semibold">{{ appName }}</span>
     </div>
 
@@ -92,6 +92,9 @@ const groupStore = useMediaGroupStore();
 const stateStore = useMediaStateStore();
 
 const appName = 'Open Video Downloader';
+// Served from public/. Bound (not a static src) so the SFC compiler does not turn it into an import.
+const iconUrl = '/icon.png';
+
 const appVersion = typeof __APP_VERSION__ === 'undefined' ? '' : __APP_VERSION__;
 
 const routeName = computed(() => String(route.name ?? ''));

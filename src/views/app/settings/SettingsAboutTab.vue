@@ -2,7 +2,7 @@
   <base-fieldset :legend="t('about.title')" label="">
     <div class="flex flex-col gap-4 text-sm">
       <div class="flex items-center gap-3">
-        <img src="/icon.png" alt="" class="size-12 shrink-0 rounded-xl" />
+        <img :src="iconUrl" alt="" class="size-12 shrink-0 rounded-xl" />
         <div class="min-w-0">
           <p class="text-base font-semibold">{{ appName }}</p>
           <p class="text-base-content/60">{{ t('about.version', { version: appVersion }) }}</p>
@@ -42,6 +42,9 @@ defineOptions({
 const { t } = useI18n();
 const { openInternalPath } = useOpener();
 const appName = 'Open Video Downloader';
+// Served from public/. Bound (not a static src) so the SFC compiler does not turn it into an import.
+const iconUrl = '/icon.png';
+
 const appVersion = typeof __APP_VERSION__ === 'undefined' ? '' : __APP_VERSION__;
 
 const openLicenses = async () => {
