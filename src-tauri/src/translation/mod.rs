@@ -29,21 +29,27 @@ use tokio::sync::watch;
 
 /// Stronghold key of the API key, written by the subtitles settings page.
 const API_KEY_SECRET: &str = "translate.apiKey";
-/// Lines per request: enough context for the model, few enough that it returns every line.
-const BATCH_SIZE: usize = 50;
+/// Source characters per request. The reply stays well under the ~4000-token output limit many
+/// providers apply by default, and a video of up to about ten minutes goes out in one request.
+const BATCH_CHARS: usize = 5000;
+/// Lines per request at most, so the model reliably returns one translation per line.
+const BATCH_MAX_LINES: usize = 250;
+/// Lines before a batch that are sent along with it as context only.
+const CONTEXT_LINES: usize = 5;
 /// Requests in flight at once.
 const CONCURRENCY: usize = 6;
-/// Tries per batch before its lines are left untranslated.
+/// Tries per batch before it is split in half (and then before lines are left untranslated).
 const MAX_ATTEMPTS: u32 = 3;
-const REQUEST_TIMEOUT: Duration = Duration::from_secs(180);
+const REQUEST_TIMEOUT: Duration = Duration::from_secs(300);
 const DEFAULT_TARGET_LANGUAGE: &str = "简体中文";
 const SYSTEM_PROMPT: &str = "You translate video subtitles. Translate every line of the JSON \
-  array the user sends into {target}. The lines are consecutive subtitles from one video, often \
-  produced by automatic speech recognition, so they can contain recognition errors and sentences \
-  split across lines; use the neighbouring lines to work out what is meant. Keep each \
-  translation short enough to read as a subtitle, and translate sound tags such as [music] too, \
-  keeping the brackets. Reply with only a JSON array of strings: exactly one translation per \
-  input line, in the same order, with nothing before or after it.";
+  array the user asks you to translate into {target}. The lines are consecutive subtitles from \
+  one video, often produced by automatic speech recognition, so they can contain recognition \
+  errors and sentences split across lines; use the neighbouring lines to work out what is \
+  meant. The user may also send a few earlier lines for context only: never translate or return \
+  those. Keep each translation short enough to read as a subtitle, and translate sound tags such \
+  as [music] too, keeping the brackets. Reply with only a JSON array of strings: exactly one \
+  translation per line to translate, in the same order, with nothing before or after it.";
 
 /// Why no bilingual subtitle was written. Each kind maps to an `errors.runner.*` message.
 enum Failure {
@@ -84,6 +90,17 @@ enum BatchError {
 enum RequestError {
   Fatal(String),
   Retry(String),
+  /// The reply hit the provider's output limit, so the batch has to be smaller.
+  TooLong,
+}
+
+/// A run of consecutive cues sent in one request.
+struct Batch {
+  /// Index of the batch's first cue.
+  start: usize,
+  /// The lines just before the batch, sent as context only.
+  context: Vec<String>,
+  lines: Vec<String>,
 }
 
 /// The subtitle track to translate.
@@ -108,6 +125,7 @@ struct ChatResponse {
 #[derive(Deserialize)]
 struct ChatChoice {
   message: ChatMessage,
+  finish_reason: Option<String>,
 }
 
 #[derive(Deserialize)]
@@ -263,32 +281,30 @@ impl Job<'_> {
       .timeout(REQUEST_TIMEOUT)
       .build()
       .map_err(|e| Failure::Failed(format!("Could not create the HTTP client: {e}")))?;
-    let batches: Vec<Vec<String>> = cues
-      .chunks(BATCH_SIZE)
-      .map(|chunk| chunk.iter().map(|cue| cue.text.clone()).collect())
-      .collect();
+    let texts: Vec<String> = cues.iter().map(|cue| cue.text.clone()).collect();
+    let batches = make_batches(&texts);
     let total = batches.len();
-    let mut results = stream::iter(batches.into_iter().enumerate())
-      .map(|(index, lines)| translate_indexed(client.clone(), Arc::clone(&chat), index, lines))
+    let mut results = stream::iter(batches)
+      .map(|batch| translate_indexed(client.clone(), Arc::clone(&chat), batch))
       .buffer_unordered(CONCURRENCY);
 
     let mut translations: Vec<Option<String>> = vec![None; cues.len()];
     let mut done = 0usize;
-    while let Some((index, result)) = results.next().await {
+    while let Some((start, result)) = results.next().await {
       if !*self.cancel_rx.borrow() {
         return Ok(None);
       }
       match result {
         Ok(lines) => {
           for (offset, line) in lines.into_iter().enumerate() {
-            if let Some(slot) = translations.get_mut(index * BATCH_SIZE + offset) {
+            if let Some(slot) = translations.get_mut(start + offset) {
               *slot = Some(line);
             }
           }
         }
         Err(BatchError::Fatal(message)) => return Err(Failure::Failed(message)),
         Err(BatchError::Exhausted(message)) => {
-          let line = format!("[translate] Batch {} failed: {message}", index + 1);
+          let line = format!("[translate] Lines from {} failed: {message}", start + 1);
           self.log(&line);
         }
       }
@@ -446,18 +462,65 @@ fn language_base(language: &str) -> &str {
   language.split(['-', '_']).next().unwrap_or(language)
 }
 
+/// Splits the lines into as few requests as the budget allows: as many lines as fit in
+/// `BATCH_CHARS` characters (at most `BATCH_MAX_LINES`), each with the lines before it as context.
+fn make_batches(texts: &[String]) -> Vec<Batch> {
+  let mut batches = Vec::new();
+  let mut start = 0;
+  while start < texts.len() {
+    let mut end = start;
+    let mut chars = 0;
+    while end < texts.len() && end - start < BATCH_MAX_LINES {
+      let len = texts[end].chars().count();
+      if end > start && chars + len > BATCH_CHARS {
+        break;
+      }
+      chars += len;
+      end += 1;
+    }
+    batches.push(Batch {
+      start,
+      context: texts[start.saturating_sub(CONTEXT_LINES)..start].to_vec(),
+      lines: texts[start..end].to_vec(),
+    });
+    start = end;
+  }
+  batches
+}
+
 async fn translate_indexed(
   client: reqwest::Client,
   chat: Arc<ChatConfig>,
-  index: usize,
-  lines: Vec<String>,
+  batch: Batch,
 ) -> (usize, Result<Vec<String>, BatchError>) {
-  (index, translate_batch(&client, &chat, &lines).await)
+  let result = translate_batch(&client, &chat, &batch.context, &batch.lines).await;
+  (batch.start, result)
 }
 
+/// Translates one batch. When it keeps failing (usually a reply that was cut off or missed a
+/// line), its two halves are translated separately before giving up.
 async fn translate_batch(
   client: &reqwest::Client,
   chat: &ChatConfig,
+  context: &[String],
+  lines: &[String],
+) -> Result<Vec<String>, BatchError> {
+  match translate_with_retries(client, chat, context, lines).await {
+    Err(BatchError::Exhausted(_)) if lines.len() > 1 => {}
+    result => return result,
+  }
+  let (first, second) = lines.split_at(lines.len() / 2);
+  let mut translated = translate_with_retries(client, chat, context, first).await?;
+  let second_context = &first[first.len().saturating_sub(CONTEXT_LINES)..];
+  let rest = translate_with_retries(client, chat, second_context, second).await?;
+  translated.extend(rest);
+  Ok(translated)
+}
+
+async fn translate_with_retries(
+  client: &reqwest::Client,
+  chat: &ChatConfig,
+  context: &[String],
   lines: &[String],
 ) -> Result<Vec<String>, BatchError> {
   let mut last_error = String::new();
@@ -466,26 +529,38 @@ async fn translate_batch(
       let delay = Duration::from_secs(2u64.pow(attempt));
       tokio::time::sleep(delay).await;
     }
-    match request_translation(client, chat, lines).await {
+    match request_translation(client, chat, context, lines).await {
       Ok(translated) if translated.len() == lines.len() => return Ok(translated),
       Ok(translated) => {
         last_error = format!("expected {} lines, got {}", lines.len(), translated.len());
       }
       Err(RequestError::Fatal(message)) => return Err(BatchError::Fatal(message)),
       Err(RequestError::Retry(message)) => last_error = message,
+      Err(RequestError::TooLong) => return Err(BatchError::Exhausted("reply cut off".into())),
     }
   }
   Err(BatchError::Exhausted(last_error))
 }
 
+fn json_array(lines: &[String]) -> String {
+  serde_json::to_string(lines).unwrap_or_default()
+}
+
 async fn request_translation(
   client: &reqwest::Client,
   chat: &ChatConfig,
+  context: &[String],
   lines: &[String],
 ) -> Result<Vec<String>, RequestError> {
-  let lines_json = serde_json::to_string(lines).map_err(|e| RequestError::Fatal(e.to_string()))?;
   let system = SYSTEM_PROMPT.replace("{target}", &chat.target_language);
-  let user = format!("{} lines:\n{lines_json}", lines.len());
+  let mut user = String::new();
+  if !context.is_empty() {
+    user.push_str("Earlier lines for context only, do not translate:\n");
+    user.push_str(&json_array(context));
+    user.push_str("\n\n");
+  }
+  user.push_str(&format!("Translate these {} lines:\n", lines.len()));
+  user.push_str(&json_array(lines));
   let body = serde_json::json!({
     "model": chat.model,
     "messages": [
@@ -518,12 +593,13 @@ async fn request_translation(
     .json()
     .await
     .map_err(|e| RequestError::Retry(e.to_string()))?;
-  let content = reply
-    .choices
-    .into_iter()
-    .next()
-    .and_then(|choice| choice.message.content)
-    .unwrap_or_default();
+  let Some(choice) = reply.choices.into_iter().next() else {
+    return Err(RequestError::Retry("The reply had no choices.".into()));
+  };
+  if choice.finish_reason.as_deref() == Some("length") {
+    return Err(RequestError::TooLong);
+  }
+  let content = choice.message.content.unwrap_or_default();
   parse_translations(&content)
     .ok_or_else(|| RequestError::Retry("Reply was not a JSON array.".into()))
 }
@@ -568,7 +644,7 @@ fn is_srt(path: &Path) -> bool {
 
 #[cfg(test)]
 mod tests {
-  use super::{chat_completions_url, parse_translations, pick_source};
+  use super::{chat_completions_url, make_batches, parse_translations, pick_source};
   use crate::models::SubtitleInventory;
 
   fn inventory(manual: &[&str], auto: &[&str]) -> SubtitleInventory {
@@ -609,6 +685,33 @@ mod tests {
     let full = "https://api.openai.com/v1/chat/completions";
     assert_eq!(chat_completions_url(full).as_deref(), Some(full));
     assert!(chat_completions_url("  ").is_none());
+  }
+
+  #[test]
+  fn sends_short_videos_in_one_request() {
+    let texts = vec!["hello there".to_string(); 120];
+    let batches = make_batches(&texts);
+    assert_eq!(batches.len(), 1);
+    assert_eq!(batches[0].lines.len(), 120);
+    assert!(batches[0].context.is_empty());
+  }
+
+  #[test]
+  fn caps_lines_per_request_and_carries_context() {
+    let texts = vec!["x".to_string(); 600];
+    let batches = make_batches(&texts);
+    let sizes: Vec<usize> = batches.iter().map(|batch| batch.lines.len()).collect();
+    assert_eq!(sizes, [250, 250, 100]);
+    assert_eq!(batches[1].start, 250);
+    assert_eq!(batches[1].context.len(), 5);
+  }
+
+  #[test]
+  fn respects_the_character_budget() {
+    let texts = vec!["y".repeat(3000); 3];
+    let batches = make_batches(&texts);
+    assert_eq!(batches.len(), 3);
+    assert!(batches.iter().all(|batch| batch.lines.len() == 1));
   }
 
   #[test]

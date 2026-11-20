@@ -170,7 +170,7 @@
           </p>
         </div>
 
-        <div v-if="translationSettings.enabled" class="flex flex-col gap-4 mt-2 max-w-2xl">
+        <div class="flex flex-col gap-4 mt-2 max-w-2xl">
           <div class="flex flex-col gap-1">
             <label class="font-semibold" for="translation-base-url">
               {{ t('subtitles.translation.baseUrl.label') }}
