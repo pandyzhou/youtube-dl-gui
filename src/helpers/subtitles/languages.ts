@@ -12,6 +12,7 @@ const expandedCodes: Record<string, SubtitleLanguageOption> = {
   'pt-PT': { code: 'pt-PT', englishName: 'Portuguese (Portugal)', nativeName: 'Português (Portugal)' },
   'pt-BR': { code: 'pt-BR', englishName: 'Portuguese (Brazil)', nativeName: 'Português (Brasil)' },
   'zh-TW': { code: 'zh-TW', englishName: 'Traditional Chinese (Taiwan)', nativeName: '繁體中文（台灣）' },
+  'zh-CN': { code: 'zh-CN', englishName: 'Simplified Chinese (China)', nativeName: '简体中文（中国）' },
 };
 
 export const languageOptions: SubtitleLanguageOption[] = [...codes, ...Object.keys(expandedCodes)]
@@ -86,6 +87,16 @@ export function getPreferredAutoSubtitleLanguages(codes: string[]): string[] {
     .filter(Boolean);
 }
 
+// Maps Chinese tags such as zh-Hans-CN, zh-SG, zh-HK or zh-Hant to the
+// supported zh-CN / zh-TW variants. Plain "zh" is left to the caller.
+function resolveChineseVariant(candidate: string): string | undefined {
+  const parts = candidate.replace(/_/g, '-').toLowerCase().split('-');
+  if (parts[0] !== 'zh' || parts.length < 2) return undefined;
+
+  const traditional = ['hant', 'tw', 'hk', 'mo'];
+  return parts.some(part => traditional.includes(part)) ? 'zh-TW' : 'zh-CN';
+}
+
 export function detectBrowserLanguageCodes(): string[] {
   let candidates: readonly string[] = [];
 
@@ -103,6 +114,11 @@ export function detectBrowserLanguageCodes(): string[] {
     if (!candidate) continue;
 
     const locale = normalizeLocale(candidate);
+
+    const chinese = resolveChineseVariant(candidate);
+    if (chinese) {
+      normalized.add(chinese);
+    }
 
     if (expandedCodes[locale]) {
       normalized.add(locale);
