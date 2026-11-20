@@ -114,3 +114,13 @@ input[type="number"]::-webkit-outer-spin-button {
     -webkit-appearance: none;
     margin: 0;
 }
+
+/*
+ * Tauri's isolation pattern appends <iframe id="__tauri_isolation__"> to <body>
+ * and hides it with an injected inline <style>. Our CSP (style-src 'self') blocks
+ * that inline style, so the default 300x150 iframe ends up below #app and makes
+ * the whole window scrollable. This is the same rule Tauri tries to inject.
+ */
+#__tauri_isolation__ {
+    display: none !important;
+}
