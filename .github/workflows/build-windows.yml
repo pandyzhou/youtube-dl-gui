@@ -1,9 +1,12 @@
 name: 'Build Windows (unsigned)'
 
-# Unsigned Windows x64 build for this fork. Unlike publish.yml it needs no
-# secrets: updater artifacts, code signing and Sentry are skipped.
-# Every successful run publishes a GitHub Release tagged v<version>-zh.<N>
-# with the installer and the portable exe, and also uploads them as artifacts.
+# Windows x64 build for this fork. Unlike publish.yml it skips Windows code
+# signing and Sentry, so the only secret needed is TAURI_SIGNING_PRIVATE_KEY
+# (the updater key matching plugins.updater.pubkey in tauri.conf.json).
+#
+# Every successful run publishes a GitHub Release tagged v<version>-zh.<N>.
+# The app itself is built as version <version>-zh.<N> so the in-app updater
+# sees each release as newer, and latest.json is attached for the updater.
 
 on:
   workflow_dispatch:
@@ -48,22 +51,64 @@ jobs:
       - name: Install frontend dependencies
         run: npm ci
 
+      - name: Determine release version
+        shell: bash
+        run: |
+          set -euo pipefail
+          BASE="$(node -p 'require("./package.json").version')"
+
+          # Next N for v<base>-zh.<N>, based on tags already on the remote.
+          LAST="$(git ls-remote --tags origin "refs/tags/v${BASE}-zh.*" \
+            | { grep -v '\^{}' || true; } \
+            | sed -E 's#.*-zh\.([0-9]+)$#\1#' \
+            | sort -n | tail -n 1)"
+          APP_VERSION="${BASE}-zh.$(( ${LAST:-0} + 1 ))"
+          echo "Building ${APP_VERSION}"
+
+          echo "BASE_VERSION=${BASE}" >> "$GITHUB_ENV"
+          echo "APP_VERSION=${APP_VERSION}" >> "$GITHUB_ENV"
+          echo "TAG=v${APP_VERSION}" >> "$GITHUB_ENV"
+
       - name: Build app
         shell: bash
-        run: npx tauri build --bundles nsis --config '{"bundle":{"createUpdaterArtifacts":false}}'
+        env:
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ''
+        run: npx tauri build --bundles nsis --config "{\"version\":\"${APP_VERSION}\"}"
 
-      - name: Upload installer
+      - name: Prepare release assets
+        shell: bash
+        run: |
+          set -euo pipefail
+          NSIS_DIR=src-tauri/target/release/bundle/nsis
+          SETUP_NAME="Open.Video.Downloader_${APP_VERSION}_x64-setup.exe"
+          PORTABLE_NAME="Open.Video.Downloader_${APP_VERSION}_x64-portable.exe"
+
+          mkdir -p release-assets
+          cp "${NSIS_DIR}"/*-setup.exe "release-assets/${SETUP_NAME}"
+          cp src-tauri/target/release/open-video-downloader.exe "release-assets/${PORTABLE_NAME}"
+
+          # The signature covers the file contents, so it stays valid after renaming.
+          SIGNATURE="$(cat "${NSIS_DIR}"/*-setup.exe.sig)"
+          URL="https://github.com/${GITHUB_REPOSITORY}/releases/download/${TAG}/${SETUP_NAME}"
+
+          SIGNATURE="$SIGNATURE" URL="$URL" node -e '
+            const platform = { signature: process.env.SIGNATURE, url: process.env.URL };
+            const manifest = {
+              version: process.env.APP_VERSION,
+              notes: "简体中文非官方构建 " + process.env.TAG,
+              pub_date: new Date().toISOString(),
+              platforms: { "windows-x86_64": platform, "windows-x86_64-nsis": platform },
+            };
+            require("fs").writeFileSync("release-assets/latest.json", JSON.stringify(manifest, null, 2));
+          '
+          cat release-assets/latest.json
+
+      - name: Upload build artifacts
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
-          name: open-video-downloader-windows-x64-setup
-          path: src-tauri/target/release/bundle/nsis/*.exe
-          if-no-files-found: error
-
-      - name: Upload portable exe
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
-        with:
-          name: open-video-downloader-windows-x64-exe
-          path: src-tauri/target/release/open-video-downloader.exe
+          name: open-video-downloader-windows-x64
+          path: release-assets/*
           if-no-files-found: error
 
       - name: Publish release
@@ -72,29 +117,15 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -euo pipefail
-          VERSION="$(node -p 'require("./package.json").version')"
-
-          # Next N for v<version>-zh.<N>, based on tags already on the remote.
-          LAST="$(git ls-remote --tags origin "refs/tags/v${VERSION}-zh.*" \
-            | { grep -v '\^{}' || true; } \
-            | sed -E 's#.*-zh\.([0-9]+)$#\1#' \
-            | sort -n | tail -n 1)"
-          TAG="v${VERSION}-zh.$(( ${LAST:-0} + 1 ))"
-          echo "Publishing ${TAG}"
-
-          mkdir -p release-assets
-          cp src-tauri/target/release/bundle/nsis/*.exe \
-            "release-assets/Open.Video.Downloader_${TAG#v}_x64-setup.exe"
-          cp src-tauri/target/release/open-video-downloader.exe \
-            "release-assets/Open.Video.Downloader_${TAG#v}_x64-portable.exe"
-
-          gh release create "${TAG}" release-assets/*.exe \
+          gh release create "${TAG}" release-assets/* \
             --target "${GITHUB_SHA}" \
+            --latest \
             --title "Open Video Downloader ${TAG}（简体中文）" \
-            --notes "基于 Open Video Downloader v${VERSION}，增加简体中文界面的非官方构建。
+            --notes "基于 Open Video Downloader v${BASE_VERSION}，增加简体中文界面的非官方构建。
 
           - \`*-setup.exe\`：安装包
           - \`*-portable.exe\`：免安装版
+          - \`latest.json\`：供应用内自动更新使用，无需下载
 
           构建自提交 ${GITHUB_SHA}。程序未签名，首次运行时 Windows SmartScreen 可能提示风险，点“更多信息”→“仍要运行”即可。
-          注意：应用内的自动更新仍指向官方版本，接受更新会被替换为官方版（不含简体中文）。"
+          应用内的自动更新会从本仓库获取新版本。"
