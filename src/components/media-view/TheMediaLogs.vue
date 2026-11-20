@@ -21,7 +21,7 @@
       <li v-for="group in skippedGroups" :key="group.message">
         <div class="alert alert-warning alert-soft flex items-center justify-between gap-4">
           <span>{{ group.message }}</span>
-          <span class="badge badge-warning badge-soft">
+          <span class="badge badge-warning badge-soft shrink-0 whitespace-nowrap">
             {{ t('media.view.logs.skipped.items', { count: group.count }) }}
           </span>
         </div>

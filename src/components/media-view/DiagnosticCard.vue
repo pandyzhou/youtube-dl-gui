@@ -11,14 +11,14 @@
     >
       <span
           v-if="diagnostic.component"
-          class="badge badge-soft"
+          class="badge badge-soft shrink-0 whitespace-nowrap"
           :class="diagnosticBadgeClass"
       >
         {{ diagnostic.component }}
       </span>
       <span
           v-if="relatedFatal && diagnostic.level ===  'error'"
-          class="badge badge-soft badge-error"
+          class="badge badge-soft badge-error shrink-0 whitespace-nowrap"
       >
         <exclamation-circle-icon class="w-5 h-5"/>
         {{ t('media.view.logs.failure') }}
