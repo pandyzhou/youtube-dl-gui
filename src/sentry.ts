@@ -1,9 +1,10 @@
 import * as Sentry from '@sentry/vue';
 import router from './router.ts';
 import { App } from 'vue';
+import { SENTRY_ENABLED } from './crashReporting.ts';
 
 export function createSentry(app: App<Element>) {
-  if (__E2E__ || __DEV__) return;
+  if (!SENTRY_ENABLED || __E2E__ || __DEV__) return;
   Sentry.init({
     app,
     dsn: 'https://e5ff83f3c84f397db516955ec278c4c6@o762792.ingest.us.sentry.io/4510256640884736',

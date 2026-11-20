@@ -6,6 +6,7 @@ import { useI18n } from 'vue-i18n';
 import { useMediaDiagnosticsStore } from '../stores/media/diagnostics.ts';
 import { firstSentence } from '../helpers/diagnostics.ts';
 import { useLinkify } from './useLinkify.ts';
+import { SENTRY_ENABLED } from '../crashReporting.ts';
 
 type DisplayDiagnostic = {
   shortMessage: string;
@@ -79,7 +80,7 @@ export function useDiagnostic(diagnostic: Ref<MediaDiagnostic>, short = false) {
   const hasReported = ref(false);
 
   const isReportable = computed(() => {
-    return diagnostic.value.level === 'error' && diagnostic.value.code === 'unknown';
+    return SENTRY_ENABLED && diagnostic.value.level === 'error' && diagnostic.value.code === 'unknown';
   });
 
   const relatedFatal = computed(() => {

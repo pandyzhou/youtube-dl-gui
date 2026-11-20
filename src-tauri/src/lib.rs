@@ -71,15 +71,9 @@ pub fn run() {
     .setup(|app| {
       let handle = app.handle();
 
-      let sentry_client = sentry::init((
-        "https://e5ff83f3c84f397db516955ec278c4c6@o762792.ingest.us.sentry.io/4510256640884736",
-        sentry::ClientOptions {
-          traces_sample_rate: 0.05,
-          sample_rate: 0.25,
-          release: sentry::release_name!(),
-          ..sentry::ClientOptions::default()
-        },
-      ));
+      // Crash reporting is disabled in this fork: without a DSN the Sentry
+      // client is inactive, so capture_error and the tracing layer send nothing.
+      let sentry_client = sentry::init(sentry::ClientOptions::default());
       handle.manage::<ClientInitGuard>(sentry_client);
 
       init_tracing();
