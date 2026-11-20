@@ -17,6 +17,23 @@
         {{ t('common.parenthesis', { content: settings.performance.maxConcurrency }) }}
       </p>
     </div>
+    <label class="font-semibold mt-4" for="concurrentFragments">
+      {{ t('settings.performance.concurrentFragments.label') }}
+    </label>
+    <div class="flex w-full h-full items-center gap-4">
+      <input
+          v-model.number="settings.performance.concurrentFragments"
+          type="range"
+          :min="1"
+          :max="16"
+          id="concurrentFragments"
+          class="range range-primary block"
+      />
+      <p class="w-4">
+        {{ t('common.parenthesis', { content: settings.performance.concurrentFragments }) }}
+      </p>
+    </div>
+    <p class="label">{{ t('settings.performance.concurrentFragments.hint') }}</p>
     <label class="font-semibold mt-4" for="splitPlaylistThreshold">
       {{ t('settings.performance.splitPlaylistThreshold.label') }}
     </label>

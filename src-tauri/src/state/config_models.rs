@@ -213,6 +213,8 @@ pub struct PerformanceSettings {
   pub max_concurrency: usize,
   pub split_playlist_threshold: usize,
   pub auto_load_size: bool,
+  /// Fragments of an HLS/DASH download fetched at once (yt-dlp `--concurrent-fragments`).
+  pub concurrent_fragments: usize,
 }
 
 impl Default for PerformanceSettings {
@@ -223,6 +225,7 @@ impl Default for PerformanceSettings {
         .unwrap_or(1),
       split_playlist_threshold: 50,
       auto_load_size: true,
+      concurrent_fragments: 8,
     }
   }
 }

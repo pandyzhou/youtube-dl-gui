@@ -109,6 +109,7 @@ export interface PerformanceSettings {
   maxConcurrency: number;
   splitPlaylistThreshold: number;
   autoLoadSize: boolean;
+  concurrentFragments: number;
 }
 
 export interface SubtitleSettings {
@@ -245,6 +246,7 @@ export const defaultPerformanceSettings: PerformanceSettings = {
   maxConcurrency: 1,
   splitPlaylistThreshold: 50,
   autoLoadSize: true,
+  concurrentFragments: 8,
 };
 
 export const defaultSubtitleSettings: SubtitleSettings = {

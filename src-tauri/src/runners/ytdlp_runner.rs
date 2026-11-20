@@ -191,6 +191,12 @@ impl<'a> YtdlpRunner<'a> {
     self
   }
 
+  pub fn with_performance_args(mut self) -> Self {
+    let fragments = self.cfg.performance.concurrent_fragments;
+    self.args.extend(concurrent_fragment_args(fragments));
+    self
+  }
+
   pub fn with_format_args(
     mut self,
     format_options: &FormatOptions,
@@ -537,6 +543,22 @@ fn normalize_extractor_args(value: &str) -> Option<String> {
   } else {
     Some(normalized)
   }
+}
+
+/// Upper bound for `--concurrent-fragments`, so a bad config value cannot open hundreds of
+/// connections at once.
+const MAX_CONCURRENT_FRAGMENTS: usize = 16;
+
+/// `--concurrent-fragments` for fragmented (HLS/DASH) downloads. 0 or 1 keeps yt-dlp's default
+/// of one fragment at a time. Regular single-file downloads are not affected.
+fn concurrent_fragment_args(fragments: usize) -> Vec<String> {
+  if fragments <= 1 {
+    return Vec::new();
+  }
+  vec![
+    "--concurrent-fragments".into(),
+    fragments.min(MAX_CONCURRENT_FRAGMENTS).to_string(),
+  ]
 }
 
 fn build_sponsorblock_args(settings: &SponsorBlockSettings, precise_cuts: bool) -> Vec<String> {
@@ -1093,6 +1115,16 @@ mod tests {
     .expect("args");
     assert_eq!(args[4], "--write-auto-subs");
     assert_eq!(args[8], "en,nl");
+  }
+
+  #[test]
+  fn concurrent_fragment_args_only_above_one() {
+    assert!(super::concurrent_fragment_args(0).is_empty());
+    assert!(super::concurrent_fragment_args(1).is_empty());
+    let args = super::concurrent_fragment_args(8);
+    assert_eq!(args, ["--concurrent-fragments", "8"]);
+    let capped = super::concurrent_fragment_args(64);
+    assert_eq!(capped, ["--concurrent-fragments", "16"]);
   }
 
   #[test]

@@ -613,6 +613,10 @@
       "maxConcurrency": {
         "label": "Max concurrent jobs:"
       },
+      "concurrentFragments": {
+        "label": "Concurrent fragments per download:",
+        "hint": "How many fragments of a fragmented (HLS/DASH) download, such as a livestream recording, are downloaded at once. Regular videos are not affected. Set to 1 to turn this off."
+      },
       "splitPlaylistThreshold": {
         "label": "Split playlists into separate videos when:",
         "options": {

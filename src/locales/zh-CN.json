@@ -513,6 +513,10 @@
       "maxConcurrency": {
         "label": "最大同时任务数："
       },
+      "concurrentFragments": {
+        "label": "单个下载的分片并发数：",
+        "hint": "分片格式（HLS/DASH，如直播回放）同时下载的分片数量，普通视频不受影响。设为 1 即关闭。"
+      },
       "splitPlaylistThreshold": {
         "label": "以下情况将播放列表拆分为单个视频：",
         "options": {
