@@ -215,9 +215,18 @@ impl YtdlpProgressParser {
     fn parse_opt_u64(s: &str) -> Option<u64> {
       let t = s.trim();
       if t.is_empty() || t.eq_ignore_ascii_case("na") {
-        None
+        return None;
+      }
+      if let Ok(value) = t.parse::<u64>() {
+        return Some(value);
+      }
+      // yt-dlp prints some counters as floats (e.g. eta and total_bytes_estimate for
+      // fragmented HLS/DASH downloads), so accept those too and round them.
+      let value: f64 = t.parse().ok()?;
+      if value.is_finite() && value >= 0.0 {
+        Some(value.round() as u64)
       } else {
-        t.parse().ok()
+        None
       }
     }
     fn parse_opt_f64(s: &str) -> Option<f64> {
@@ -473,6 +482,26 @@ mod tests {
       .is_some_and(|value| value > 48.0 && value < 49.0));
     assert_eq!(progress.eta_secs, Some(13));
     assert_eq!(progress.speed_bps, None);
+  }
+
+  #[test]
+  fn parses_fractional_eta_from_fragmented_downloads() {
+    let parser = YtdlpProgressParser::new("item", "group", ProgressCategory::Video, None);
+    // yt-dlp reports eta and total_bytes_estimate as floats for HLS/DASH fragment downloads.
+    let event = parser
+      .try_progress_update(
+        "RAW|48.0| 48.0%|10066329.6|1532.8714285714|6276775936|NA|13076616533.333334|1869|3894",
+      )
+      .expect("expected progress");
+
+    let ProgressEvent::Progress(progress) = event else {
+      panic!("expected progress event");
+    };
+
+    assert_eq!(progress.eta_secs, Some(1533));
+    assert!(progress
+      .percentage
+      .is_some_and(|value| value > 47.9 && value < 48.1));
   }
 
   #[test]
