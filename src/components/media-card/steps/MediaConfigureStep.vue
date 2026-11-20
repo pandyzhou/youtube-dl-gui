@@ -99,7 +99,6 @@ const diagnosticsStore = useMediaDiagnosticsStore();
 const isSizeLoading = ref(false);
 const optionsStore = useMediaOptionsStore();
 const expandedOptionsType = computed(() => settingsStore.settings.appearance.expandedOptions);
-const showExpandedOptions = computed(() => expandedOptionsType.value === 'encodings' || expandedOptionsType.value === 'tracks');
 const unavailableTrackSuffix = computed(() => t('media.steps.configure.tracks.unavailableForSelectedResolution'));
 const availableTrackPrefix = computed(() => t('media.steps.configure.tracks.availableInResolutions'));
 
