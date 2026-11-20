@@ -57,4 +57,5 @@ export enum ProgressStage {
   remuxing = 'remuxing',
   reencoding = 'reencoding',
   finalizing = 'finalizing',
+  translating = 'translating',
 }

@@ -19,15 +19,10 @@
         :max="100"
         :value="percent"
     >
-      {{
-        capitalizeFirstLetter(t('media.steps.download.progress', {
-            category: categoryDisplay,
-            percentage: percent.toFixed(2),
-        }))
-      }}
+      {{ progressLabel }}
     </base-progress>
 
-    <div v-if="!isIndeterminate" class="w-full flex gap-4">
+    <div v-if="!isIndeterminate && !isTranslating" class="w-full flex gap-4">
       <p>
         {{ t('media.steps.download.metadata.eta', { eta: etaDisplay }) }}
       </p>
@@ -61,8 +56,11 @@ const { group } = defineProps({
 const store = useMediaProgressStore();
 const progress = computed(() => store.findDownloadProgress(group.id));
 
+const isTranslating = computed(() => progress.value?.stage === ProgressStage.translating);
+
 const isIndeterminate = computed(() => {
   if (!progress.value) return true;
+  if (isTranslating.value) return progress.value.percentage == null;
   if (progress.value.stage !== ProgressStage.downloading) return true;
   return progress.value.percentage == null;
 });
@@ -88,6 +86,16 @@ const categoryDisplay = computed(() => {
 const percent = computed(() =>
   progress.value?.percentage ?? 0,
 );
+
+const progressLabel = computed(() => {
+  if (isTranslating.value) {
+    return t('media.steps.download.translating', { percentage: percent.value.toFixed(0) });
+  }
+  return capitalizeFirstLetter(t('media.steps.download.progress', {
+    category: categoryDisplay.value,
+    percentage: percent.value.toFixed(2),
+  }));
+});
 
 const speedDisplay = computed(() =>
   progress.value?.speedBps != null

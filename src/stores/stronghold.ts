@@ -21,6 +21,9 @@ export const STRONGHOLD_KEYS = {
   headers: 'auth.headers',
 } as const;
 
+/** Stronghold key of the subtitle translation API key (read by the backend translator). */
+export const TRANSLATION_API_KEY = 'translate.apiKey';
+
 export interface StrongholdFields {
   username: string | null;
   password: string | null;
@@ -93,9 +96,35 @@ export const useStrongholdStore = defineStore('stronghold', () => {
     availableKeys.value = await invoke<number[][]>('stronghold_keys');
   }
 
-  function hasAvailableKeys(): boolean {
-    return availableKeys.value.length > 0;
+  async function getSecret(key: string): Promise<string | null> {
+    const entries = await invoke<Record<string, number[] | null>>('stronghold_get', { keys: [key] });
+    const raw = entries[key];
+    return raw == null ? null : new TextDecoder().decode(new Uint8Array(raw));
   }
 
-  return { status, availableKeys, hasAvailableKeys, loadStatus, initialize, getValues, setValues };
+  async function setSecret(key: string, value: string | null): Promise<void> {
+    const encoded = value ? Array.from(new TextEncoder().encode(value)) : null;
+    await invoke('stronghold_set', { entries: { [key]: encoded } });
+    availableKeys.value = await invoke<number[][]>('stronghold_keys');
+  }
+
+  // Only the authentication credentials count here; other secrets such as the translation API
+  // key must not open the credentials panel.
+  function hasAvailableKeys(): boolean {
+    const decoder = new TextDecoder();
+    const authKeys = new Set<string>(Object.values(STRONGHOLD_KEYS));
+    return availableKeys.value.some(key => authKeys.has(decoder.decode(new Uint8Array(key))));
+  }
+
+  return {
+    status,
+    availableKeys,
+    hasAvailableKeys,
+    loadStatus,
+    initialize,
+    getValues,
+    setValues,
+    getSecret,
+    setSecret,
+  };
 });

@@ -1,5 +1,6 @@
 use crate::logging::LogStoreState;
 use crate::models::download::DownloadSection;
+use crate::models::progress::MediaDestinationPath;
 use crate::models::{
   MediaDiagnosticPayload, MediaFatalPayload, MediaProgressComplete, ProgressEvent,
 };
@@ -8,6 +9,7 @@ use crate::parsers::ytdlp_progress::{progress_category_for_track_type, YtdlpProg
 use crate::runners::ytdlp_runner::{YtdlpCommandEvent, YtdlpRunner};
 use crate::scheduling::download_pipeline::DownloadEntry;
 use crate::scheduling::group_state::subscribe_group;
+use crate::translation::translate_after_download;
 use std::fmt;
 use tauri::{AppHandle, Emitter, Manager, State};
 use tokio::sync::watch;
@@ -114,6 +116,7 @@ pub async fn run_ytdlp_download(
     }
   };
   let mut cancel_rx = subscribe_group(&entry.group_id);
+  let mut destination: Option<MediaDestinationPath> = None;
 
   loop {
     tokio::select! {
@@ -134,17 +137,21 @@ pub async fn run_ytdlp_download(
           YtdlpCommandEvent::Stdout(line) => {
             let line_str = String::from_utf8_lossy(&line);
             store_log_line(&line_str, &entry, log_state, &app);
-            parse_progress_line(&line_str, &mut progress_parser, &app);
+            parse_progress_line(&line_str, &mut progress_parser, &app, &mut destination);
             parse_error_line(&line_str, &error_parser, &app);
           }
           YtdlpCommandEvent::Stderr(line) => {
             let line_str = String::from_utf8_lossy(&line);
             store_log_line(&line_str, &entry, log_state, &app);
-            parse_progress_line(&line_str, &mut progress_parser, &app);
+            parse_progress_line(&line_str, &mut progress_parser, &app, &mut destination);
             parse_error_line(&line_str, &error_parser, &app);
           }
           YtdlpCommandEvent::Terminated(term) => {
             if term.code == Some(0) {
+              translate_after_download(&app, &entry, destination.as_ref(), &cancel_rx).await;
+              if is_cancelled_now(&cancel_rx) {
+                return Ok(());
+              }
               let _ = app.emit(
                 "media_complete",
                 MediaProgressComplete {
@@ -223,13 +230,26 @@ fn store_log_line(
   store.append_line(app, &entry.group_id, line);
 }
 
-fn parse_progress_line(line: &str, progress_parser: &mut YtdlpProgressParser, app: &AppHandle) {
+/// Forwards progress events to the frontend and keeps the most confident output path, which
+/// is where subtitle translation writes its file.
+fn parse_progress_line(
+  line: &str,
+  progress_parser: &mut YtdlpProgressParser,
+  app: &AppHandle,
+  destination: &mut Option<MediaDestinationPath>,
+) {
   let progress_events = progress_parser.parse_line(line);
 
   for progress_event in progress_events {
     match progress_event {
-      ProgressEvent::Destination(destination) => {
-        app.emit("media_destination", destination).ok();
+      ProgressEvent::Destination(event) => {
+        let is_better = destination
+          .as_ref()
+          .is_none_or(|best| event.destination.confidence >= best.confidence);
+        if is_better {
+          *destination = Some(event.destination.clone());
+        }
+        app.emit("media_destination", event).ok();
       }
       ProgressEvent::Progress(progress) => {
         app.emit("media_progress", progress).ok();

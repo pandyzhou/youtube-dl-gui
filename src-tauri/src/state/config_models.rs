@@ -266,6 +266,29 @@ impl Default for SubtitleSettings {
   }
 }
 
+/// Bilingual subtitles through an OpenAI-compatible chat completions API. The API key lives in
+/// the secrets store, not here.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(default, rename_all = "camelCase")]
+pub struct TranslationSettings {
+  pub enabled: bool,
+  /// e.g. `https://api.deepseek.com`; `/chat/completions` is appended.
+  pub base_url: String,
+  pub model: String,
+  pub target_language: String,
+}
+
+impl Default for TranslationSettings {
+  fn default() -> Self {
+    Self {
+      enabled: false,
+      base_url: String::new(),
+      model: String::new(),
+      target_language: "简体中文".into(),
+    }
+  }
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(default, rename_all = "camelCase")]
 pub struct UpdateSettings {
@@ -368,6 +391,7 @@ pub struct Config {
   pub performance: PerformanceSettings,
   pub sponsor_block: SponsorBlockSettings,
   pub subtitles: SubtitleSettings,
+  pub translation: TranslationSettings,
   pub update: UpdateSettings,
   pub system: SystemConfig,
   pub notifications: NotificationConfig,

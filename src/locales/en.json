@@ -299,6 +299,7 @@
         "progress": "Downloading {category}… — {percentage}%",
         "progressList": "Downloading… {percentage}% — {done} of {total}",
         "indeterminate": "{status}…",
+        "translating": "Translating subtitles… — {percentage}%",
         "category": {
           "video": "video",
           "audio": "audio",
@@ -313,7 +314,8 @@
           "merging": "Merging",
           "remuxing": "Remuxing",
           "reencoding": "Re-encoding",
-          "finalizing": "Cleaning up"
+          "finalizing": "Cleaning up",
+          "translating": "Translating subtitles"
         },
         "metadata": {
           "eta": "ETA: {eta}",
@@ -363,6 +365,30 @@
   },
   "subtitles": {
     "title": "Subtitles",
+    "translation": {
+      "legend": "AI bilingual subtitles",
+      "legendLabel": "Translate subtitles with an OpenAI-compatible API after downloading.",
+      "enable": {
+        "label": "Create bilingual subtitles",
+        "hint": "After a video finishes downloading, its original subtitles (YouTube's automatic captions when there are no others) are translated and saved next to the video as a bilingual .srt file with the same name."
+      },
+      "baseUrl": {
+        "label": "API address",
+        "placeholder": "https://api.deepseek.com",
+        "hint": "The base URL from your provider's documentation, for example https://api.deepseek.com or https://api.openai.com/v1. /chat/completions is added automatically."
+      },
+      "model": {
+        "label": "Model",
+        "placeholder": "deepseek-chat"
+      },
+      "target": {
+        "label": "Translate into"
+      },
+      "apiKey": {
+        "label": "API key",
+        "hint": "Stored in the secrets store, like your login credentials."
+      }
+    },
     "defaults": {
       "legend": "Subtitle defaults",
       "hint": "Used when a video has subtitles."
@@ -1107,6 +1133,22 @@
       "ffmpegFailed": {
         "shortMessage": "ffmpeg failed",
         "message": "FFmpeg encountered an error during processing."
+      },
+      "translationNotConfigured": {
+        "shortMessage": "Translation not set up",
+        "message": "Bilingual subtitles were skipped because the API address, model or API key is missing. Check the subtitle settings."
+      },
+      "translationSourceMissing": {
+        "shortMessage": "No subtitles to translate",
+        "message": "Bilingual subtitles were skipped because no source subtitles could be downloaded for this video."
+      },
+      "translationFailed": {
+        "shortMessage": "Translation failed",
+        "message": "The bilingual subtitles could not be created. The video itself was downloaded."
+      },
+      "translationPartial": {
+        "shortMessage": "Translation incomplete",
+        "message": "Some subtitle lines could not be translated and show only the original text."
       },
       "rejectedByFilter": {
         "shortMessage": "Filtered out",

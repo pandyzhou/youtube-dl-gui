@@ -148,6 +148,89 @@
           </div>
         </div>
       </base-fieldset>
+
+      <div class="divider my-0" />
+
+      <base-fieldset
+        :legend="t('subtitles.translation.legend')"
+        :label="t('subtitles.translation.legendLabel')"
+      >
+        <div class="flex flex-col gap-1">
+          <label class="font-semibold" for="translation-enabled">
+            {{ t('subtitles.translation.enable.label') }}
+          </label>
+          <input
+            id="translation-enabled"
+            v-model="translationSettings.enabled"
+            type="checkbox"
+            class="toggle toggle-primary my-1"
+          />
+          <p class="label whitespace-normal">
+            {{ t('subtitles.translation.enable.hint') }}
+          </p>
+        </div>
+
+        <div v-if="translationSettings.enabled" class="flex flex-col gap-4 mt-2 max-w-2xl">
+          <div class="flex flex-col gap-1">
+            <label class="font-semibold" for="translation-base-url">
+              {{ t('subtitles.translation.baseUrl.label') }}
+            </label>
+            <input
+              id="translation-base-url"
+              v-model.trim="translationSettings.baseUrl"
+              type="url"
+              class="input input-bordered w-full"
+              :placeholder="t('subtitles.translation.baseUrl.placeholder')"
+              autocomplete="off"
+              spellcheck="false"
+            />
+            <p class="label whitespace-normal">
+              {{ t('subtitles.translation.baseUrl.hint') }}
+            </p>
+          </div>
+
+          <div class="flex flex-col gap-1">
+            <label class="font-semibold" for="translation-model">
+              {{ t('subtitles.translation.model.label') }}
+            </label>
+            <input
+              id="translation-model"
+              v-model.trim="translationSettings.model"
+              type="text"
+              class="input input-bordered w-full"
+              :placeholder="t('subtitles.translation.model.placeholder')"
+              autocomplete="off"
+              spellcheck="false"
+            />
+          </div>
+
+          <div class="flex flex-col gap-1">
+            <label class="font-semibold" for="translation-target">
+              {{ t('subtitles.translation.target.label') }}
+            </label>
+            <input
+              id="translation-target"
+              v-model.trim="translationSettings.targetLanguage"
+              type="text"
+              class="input input-bordered w-full"
+              autocomplete="off"
+            />
+          </div>
+
+          <credentials-init v-if="!strongholdStore.status.unlocked" />
+          <div v-else class="flex flex-col gap-1">
+            <base-secret-input
+              id="translation-api-key"
+              v-model="apiKey"
+              :password="true"
+              :label="t('subtitles.translation.apiKey.label')"
+            />
+            <p class="label whitespace-normal">
+              {{ t('subtitles.translation.apiKey.hint') }}
+            </p>
+          </div>
+        </div>
+      </base-fieldset>
     </section>
   </form>
 </template>
@@ -169,13 +252,17 @@ import {
   getPrimarySubtitleFormat,
 } from '../../helpers/subtitles/settings.ts';
 import { sanitizeSubtitleFormats, sanitizeSubtitleLanguages } from '../../helpers/subtitles/sanitize.ts';
+import BaseSecretInput from '../../components/base/BaseSecretInput.vue';
+import CredentialsInit from '../../components/authentication/CredentialsInit.vue';
 import { useSettingsStore } from '../../stores/settings.ts';
+import { TRANSLATION_API_KEY, useStrongholdStore } from '../../stores/stronghold.ts';
 import { useToastStore } from '../../stores/toast.ts';
 import { useI18n } from 'vue-i18n';
-import type { SubtitleSettings } from '../../tauri/types/config.ts';
+import type { SubtitleSettings, TranslationSettings } from '../../tauri/types/config.ts';
 
 const { t } = useI18n();
 const settingsStore = useSettingsStore();
+const strongholdStore = useStrongholdStore();
 const toastStore = useToastStore();
 
 const subtitleFormatOptions = buildSubtitleFormatOptions(t);
@@ -183,12 +270,43 @@ const subtitleFormatOptions = buildSubtitleFormatOptions(t);
 const subtitleSettings = ref<SubtitleSettings>(
   createSubtitleSettings(settingsStore.settings.subtitles),
 );
+const translationSettings = ref<TranslationSettings>({ ...settingsStore.settings.translation });
+const apiKey = ref<string | null>(null);
+const savedApiKey = ref<string | null>(null);
 const languageQuery = ref('');
 const isSaving = ref(false);
 
-const hasChanges = computed(() => {
-  return !areSubtitleSettingsEqual(subtitleSettings.value, settingsStore.settings.subtitles);
+const isApiKeyChanged = computed(() => (apiKey.value ?? '') !== (savedApiKey.value ?? ''));
+
+const hasTranslationChanges = computed(() => {
+  const current = JSON.stringify(translationSettings.value);
+  const saved = JSON.stringify(settingsStore.settings.translation);
+  return current !== saved || isApiKeyChanged.value;
 });
+
+const hasChanges = computed(() => {
+  const subtitlesChanged = !areSubtitleSettingsEqual(subtitleSettings.value, settingsStore.settings.subtitles);
+  return subtitlesChanged || hasTranslationChanges.value;
+});
+
+async function loadApiKey() {
+  if (!strongholdStore.status.unlocked) return;
+  try {
+    const value = await strongholdStore.getSecret(TRANSLATION_API_KEY);
+    apiKey.value = value;
+    savedApiKey.value = value;
+  } catch (error) {
+    console.error(error);
+  }
+}
+
+watch(
+  () => strongholdStore.status.unlocked,
+  (unlocked) => {
+    if (unlocked) void loadApiKey();
+  },
+  { immediate: true },
+);
 
 const languageSelection = computed({
   get: () => subtitleSettings.value.languages,
@@ -264,12 +382,25 @@ watch(
   { deep: true },
 );
 
+watch(
+  () => settingsStore.settings.translation,
+  (value) => {
+    translationSettings.value = { ...value };
+  },
+  { deep: true },
+);
+
 async function save() {
   const normalized = createSubtitleSettings(subtitleSettings.value);
+  const translation = { ...translationSettings.value };
 
   isSaving.value = true;
   try {
-    await settingsStore.patch({ subtitles: normalized });
+    await settingsStore.patch({ subtitles: normalized, translation });
+    if (strongholdStore.status.unlocked && isApiKeyChanged.value) {
+      await strongholdStore.setSecret(TRANSLATION_API_KEY, apiKey.value);
+      savedApiKey.value = apiKey.value;
+    }
     subtitleSettings.value = normalized;
     toastStore.showToast(t('subtitles.toasts.saved'), { style: 'success' });
   } catch (error) {

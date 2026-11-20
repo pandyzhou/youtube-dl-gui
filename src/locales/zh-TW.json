@@ -299,6 +299,7 @@
         "progress": "正在下載 {category}… — {percentage}%",
         "progressList": "正在下載… {percentage}% — {done} / {total}",
         "indeterminate": "{status}…",
+        "translating": "正在翻譯字幕… — {percentage}%",
         "category": {
           "video": "影片",
           "audio": "音訊",
@@ -313,7 +314,8 @@
           "merging": "正在合併",
           "remuxing": "正在重封裝",
           "reencoding": "正在重新編碼",
-          "finalizing": "正在清理"
+          "finalizing": "正在清理",
+          "translating": "正在翻譯字幕"
         },
         "metadata": {
           "eta": "預估剩餘時間: {eta}",
@@ -408,6 +410,30 @@
       "ass": "Advanced SubStation Alpha (.ass)",
       "ttml": "Timed Text Markup (.ttml)",
       "json3": "JSON (.json)"
+    },
+    "translation": {
+      "legend": "AI 雙語字幕",
+      "legendLabel": "下載完成後，使用 OpenAI 相容 API 將字幕翻譯成雙語。",
+      "enable": {
+        "label": "產生雙語字幕",
+        "hint": "影片下載完成後，翻譯它的原文字幕（沒有創作者提供的字幕時使用 YouTube 自動字幕），並在影片旁儲存一個同名的雙語 .srt 檔案。"
+      },
+      "baseUrl": {
+        "label": "API 位址",
+        "placeholder": "https://api.deepseek.com",
+        "hint": "填寫服務商文件中的 API 位址（base URL），例如 https://api.deepseek.com 或 https://api.openai.com/v1，會自動加上 /chat/completions。"
+      },
+      "model": {
+        "label": "模型",
+        "placeholder": "deepseek-chat"
+      },
+      "target": {
+        "label": "翻譯成"
+      },
+      "apiKey": {
+        "label": "API 金鑰",
+        "hint": "與登入憑證一樣儲存在秘密保存區中。"
+      }
     },
     "defaults": {
       "legend": "預設字幕",
@@ -1058,6 +1084,22 @@
       "unknown": {
         "shortMessage": "未知錯誤",
         "message": "處理此項目時發生未知錯誤。"
+      },
+      "translationNotConfigured": {
+        "shortMessage": "翻譯尚未設定",
+        "message": "未產生雙語字幕：API 位址、模型或 API 金鑰尚未填寫，請檢查字幕設定。"
+      },
+      "translationSourceMissing": {
+        "shortMessage": "沒有可翻譯的字幕",
+        "message": "未產生雙語字幕：此影片沒有可下載的原文字幕。"
+      },
+      "translationFailed": {
+        "shortMessage": "字幕翻譯失敗",
+        "message": "雙語字幕產生失敗，影片本身已下載完成。"
+      },
+      "translationPartial": {
+        "shortMessage": "部分字幕未翻譯",
+        "message": "部分字幕翻譯失敗，這些地方只顯示原文。"
       },
       "rejectedByFilter": {
         "shortMessage": "已被篩掉",

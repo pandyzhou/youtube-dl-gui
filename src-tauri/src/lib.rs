@@ -10,6 +10,7 @@ mod runners;
 mod scheduling;
 mod state;
 mod stronghold;
+mod translation;
 mod tray;
 mod window;
 

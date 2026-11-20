@@ -154,6 +154,13 @@ export interface NotificationSettings {
   disabledNotifications: NotificationKind[];
 }
 
+export interface TranslationSettings {
+  enabled: boolean;
+  baseUrl: string;
+  model: string;
+  targetLanguage: string;
+}
+
 export interface Settings {
   appearance: AppearanceSettings;
   auth: AuthSettings;
@@ -164,10 +171,18 @@ export interface Settings {
   performance: PerformanceSettings;
   sponsorBlock: SponsorBlockSettings;
   subtitles: SubtitleSettings;
+  translation: TranslationSettings;
   update: UpdateSettings;
   system: SystemSettings;
   notifications: NotificationSettings;
 }
+
+export const defaultTranslationSettings: TranslationSettings = {
+  enabled: false,
+  baseUrl: '',
+  model: '',
+  targetLanguage: '简体中文',
+};
 
 export const defaultAppearanceSettings: AppearanceSettings = {
   theme: 'system',
@@ -303,6 +318,7 @@ export const defaultSettings: Settings = {
     languages: [...defaultSubtitleSettings.languages],
     formatPreference: [...defaultSubtitleSettings.formatPreference],
   },
+  translation: { ...defaultTranslationSettings },
   update: defaultUpdateSettings,
   system: defaultSystemSettings,
   notifications: defaultNotificationSettings,

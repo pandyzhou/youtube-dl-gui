@@ -85,6 +85,27 @@ impl StrongholdState {
       headers,
     })
   }
+
+  /// Reads one string secret; `None` when it is missing or empty.
+  pub fn load_secret(&self, key: &str) -> Result<Option<String>, String> {
+    let guard = self
+      .inner
+      .lock()
+      .map_err(|_| "failed to lock stronghold".to_string())?;
+    let sh = guard.as_ref().ok_or_else(|| "vault locked".to_string())?;
+    match sh.store().get(key.as_bytes()).map_err(|e| e.to_string())? {
+      Some(bytes) if !bytes.is_empty() => {
+        let value = String::from_utf8(bytes).map_err(|e| e.to_string())?;
+        let value = value.trim();
+        if value.is_empty() {
+          Ok(None)
+        } else {
+          Ok(Some(value.to_string()))
+        }
+      }
+      _ => Ok(None),
+    }
+  }
 }
 
 fn generate_master_key() -> [u8; 32] {

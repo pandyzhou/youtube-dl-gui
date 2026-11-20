@@ -68,4 +68,5 @@ pub enum ProgressStage {
   Remuxing,
   Reencoding,
   Finalizing,
+  Translating,
 }
