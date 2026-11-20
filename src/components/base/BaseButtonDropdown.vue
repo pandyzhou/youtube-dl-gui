@@ -93,6 +93,8 @@ const dropdownClasses = computed(() => [
 
 const mainButtonClasses = computed(() => [
   props.btnClass,
+  // CJK labels may break between any two characters; keep them on one line.
+  'whitespace-nowrap',
   props.flushLeft ? '!rounded-l-none !border-l-0' : '',
 ]);
 

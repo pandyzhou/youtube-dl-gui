@@ -53,5 +53,7 @@ watchEffect(() => {
   @apply flex;
   @apply h-screen;
   @apply flex-col;
+  /* Only <main> scrolls; never let stray overflow add a window-level scrollbar. */
+  @apply overflow-hidden;
 }
 </style>
