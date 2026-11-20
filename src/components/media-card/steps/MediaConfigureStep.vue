@@ -1,14 +1,11 @@
 <template>
-  <div
-    class="card-body py-0 pr-0 grow w-full min-w-0 grid grid-cols-2"
-    :class="showExpandedOptions ? 'auto-rows-min' : 'grid-rows-[1fr_1fr_1fr]'"
-  >
-    <h2 :title="group.title ?? group.url" class="card-title block leading-8 overflow-hidden text-nowrap text-ellipsis text-base row-auto col-span-2">{{ group.title ?? group.url }}</h2>
+  <div class="flex min-w-0 flex-col gap-2.5">
     <media-download-options
         :formats="group.formats"
         :default-value="optionsStore.getGlobalOptions()"
         v-model="selectedOptions"
-        class="flex gap-4 w-full col-start-1 col-end-3"
+        class="flex flex-wrap gap-2"
+        size="sm"
         approximate
     />
     <media-encoding-options
@@ -18,7 +15,8 @@
         :audio-options="audioCodecOptions"
         :video-options="videoCodecOptions"
         :track-type="selectedTrackType"
-        class="flex gap-4 w-full col-start-1 col-end-3"
+        class="flex flex-wrap gap-2"
+        size="sm"
     />
     <media-track-options
         v-if="expandedOptionsType === 'tracks'"
@@ -27,31 +25,39 @@
         :audio-options="audioTrackOptions"
         :video-options="videoTrackOptions"
         :track-type="selectedTrackType"
-        class="flex gap-4 w-full col-start-1 col-end-3"
+        class="flex flex-wrap gap-2"
+        size="sm"
     />
-    <p class="flex items-center">
-      {{ t('media.steps.configure.metadata.duration', { duration: useDuration(group).value }) }}
-    </p>
-    <p v-if="!group.isCombined" class="gap-1 flex items-center">
-      {{ t('media.steps.configure.metadata.size') }}
-      <template v-if="size">
-        <span v-if="size">{{ size }}</span>
-        <div class="tooltip tooltip-bottom" :data-tip="t('media.steps.configure.metadata.sizeInfo')">
-          <information-circle-icon class="h-5 w-5 hover:opacity-60 transition-opacity"/>
-        </div>
-      </template>
-      <button
-        v-else-if="!settingsStore.settings.performance.autoLoadSize && !isSizeLoading"
-        class="btn btn-soft btn-xs"
-        @click="loadSize"
-      >
-        {{ t('common.load') }}
+    <div class="flex min-w-0 flex-wrap items-center gap-x-4 gap-y-2 text-sm text-base-content/70">
+      <span class="tabular-nums">
+        {{ t('media.steps.configure.metadata.duration', { duration: useDuration(group).value }) }}
+      </span>
+      <span v-if="!group.isCombined" class="flex items-center gap-1">
+        {{ t('media.steps.configure.metadata.size') }}
+        <template v-if="size">
+          <span class="tabular-nums">{{ size }}</span>
+          <span class="tooltip tooltip-bottom flex" :data-tip="t('media.steps.configure.metadata.sizeInfo')">
+            <information-circle-icon class="size-4 opacity-70 transition-opacity hover:opacity-100" />
+          </span>
+        </template>
+        <button
+          v-else-if="!settingsStore.settings.performance.autoLoadSize && !isSizeLoading"
+          type="button"
+          class="btn btn-soft btn-xs"
+          @click="loadSize"
+        >
+          {{ t('common.load') }}
+        </button>
+        <span v-else class="loading loading-spinner loading-xs"></span>
+      </span>
+      <span v-else>
+        {{ t('media.steps.configure.metadata.items', { amount: group.total, details: itemOutcomeDisplay }) }}
+      </span>
+      <button type="button" class="btn btn-primary btn-sm ml-auto gap-1.5" @click="emit('download')">
+        <arrow-down-tray-icon class="size-4" aria-hidden="true" />
+        {{ t('common.download') }}
       </button>
-      <span v-else class="loading loading-spinner loading-xs"></span>
-    </p>
-    <p v-else class="flex items-center">
-      {{ t('media.steps.configure.metadata.items', { amount: group.total, details: itemOutcomeDisplay }) }}
-    </p>
+    </div>
   </div>
 </template>
 
@@ -69,7 +75,7 @@ import { useI18n } from 'vue-i18n';
 import MediaDownloadOptions from '../MediaDownloadOptions.vue';
 import MediaEncodingOptions from '../MediaEncodingOptions.vue';
 import MediaTrackOptions from '../MediaTrackOptions.vue';
-import { InformationCircleIcon } from '@heroicons/vue/24/outline';
+import { ArrowDownTrayIcon, InformationCircleIcon } from '@heroicons/vue/24/outline';
 import { countSkippedDiagnostics } from '../../../helpers/skippedDiagnostics.ts';
 import { useMediaDiagnosticsStore } from '../../../stores/media/diagnostics.ts';
 
@@ -82,6 +88,10 @@ const { group } = defineProps({
     required: true,
   },
 });
+
+const emit = defineEmits<{
+  (e: 'download'): void;
+}>();
 
 const sizeStore = useMediaSizeStore();
 const settingsStore = useSettingsStore();

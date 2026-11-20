@@ -1,12 +1,7 @@
 <template>
-  <div class="card-body py-0 pr-0 grow w-full min-w-0">
-    <h2 :title="group.url" class="card-title block leading-8 overflow-hidden text-nowrap text-ellipsis text-base">{{
-        group.url
-      }}</h2>
-    <base-progress
-        :id="`${group.id}-progress`"
-    >
-      <p>{{ t('media.steps.fetch.progressLabel') }}</p>
+  <div class="flex min-w-0 flex-col gap-2">
+    <base-progress :id="`${group.id}-progress`">
+      {{ t('media.steps.fetch.progressLabel') }}
     </base-progress>
   </div>
 </template>

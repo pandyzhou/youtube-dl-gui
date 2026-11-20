@@ -1,23 +1,22 @@
 <template>
-  <div class="card-body py-0 pr-0 grow w-full min-w-0 overflow-hidden">
-    <h2
-      :title="group.title ?? group.url"
-      class="card-title w-full block shrink-0 leading-8 overflow-hidden whitespace-nowrap text-ellipsis text-base"
-    >
-      {{ group.title ?? group.url }}
-    </h2>
-    <base-progress
-      :id="`${group.id}-progress`"
-      :max="100"
-      :value="100"
-      variant="error"
-      class="shrink-0"
-    >
-      {{ t('media.steps.error.errorPrefix', { message: diagnosticDisplay.shortMessage }) }}
-    </base-progress>
-    <p class="min-h-0 overflow-y-auto break-words leading-5">{{ diagnosticDisplay.message }}</p>
-    <div class="w-full flex shrink-0 gap-4">
-      <button @click="report" v-if="isReportable" :disabled="hasReported" class="btn btn-subtle">
+  <div class="flex min-w-0 flex-col gap-2.5">
+    <div class="flex min-w-0 flex-col gap-1">
+      <p class="flex min-w-0 items-center gap-1.5 text-sm font-medium text-error">
+        <exclamation-triangle-icon class="size-4 shrink-0" aria-hidden="true" />
+        <span class="min-w-0 truncate">{{ t('media.steps.error.errorPrefix', { message: diagnosticDisplay.shortMessage }) }}</span>
+      </p>
+      <p class="line-clamp-2 text-sm leading-5 break-words text-base-content/70" :title="diagnosticDisplay.message">
+        {{ diagnosticDisplay.message }}
+      </p>
+    </div>
+    <div class="flex flex-wrap items-center gap-2">
+      <button type="button" class="btn btn-sm btn-primary gap-1.5" @click="emit('retry')">
+        <arrow-path-icon class="size-4" aria-hidden="true" />
+        {{ t('common.retry') }}
+      </button>
+      <router-link v-if="errorAction" :to="errorAction.to" class="btn btn-sm btn-soft">{{ errorAction.label }}</router-link>
+      <router-link :to="{ name: 'group.logs', params: { groupId: group.id } }" class="btn btn-sm btn-soft">{{ t('media.steps.error.showFull') }}</router-link>
+      <button type="button" @click="report" v-if="isReportable" :disabled="hasReported" class="btn btn-sm btn-ghost">
         <template v-if="isReporting">
           <span class="sr-only">{{ t('common.loading') }}</span>
           <span class="loading loading-spinner loading-sm"></span>
@@ -26,15 +25,13 @@
           <span>{{ t('media.steps.error.report') }}</span>
         </template>
       </button>
-      <router-link :to="{ name: 'group.logs', params: { groupId: group.id } }" class="btn btn-subtle">{{ t('media.steps.error.showFull') }}</router-link>
-      <router-link v-if="errorAction" :to="errorAction.to" class="btn btn-subtle">{{ errorAction.label }}</router-link>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import { computed, PropType } from 'vue';
-import BaseProgress from '../../base/BaseProgress.vue';
+import { ArrowPathIcon, ExclamationTriangleIcon } from '@heroicons/vue/24/outline';
 import { Group } from '../../../tauri/types/group';
 import { useI18n } from 'vue-i18n';
 import { useMediaDiagnosticsStore } from '../../../stores/media/diagnostics.ts';
@@ -49,6 +46,10 @@ const { group } = defineProps({
     required: true,
   },
 });
+
+const emit = defineEmits<{
+  (e: 'retry'): void;
+}>();
 
 const diagnosticsStore = useMediaDiagnosticsStore();
 

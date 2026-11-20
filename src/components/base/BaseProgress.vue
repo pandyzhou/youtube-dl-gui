@@ -1,28 +1,31 @@
 <template>
-  <div class="relative block w-full">
+  <div class="flex w-full min-w-0 flex-col gap-1.5">
+    <label
+        v-if="$slots.default"
+        :for="composedId"
+        class="min-w-0 truncate text-sm font-medium"
+    >
+      <slot/>
+    </label>
     <progress
         :id="composedId"
-        class="progress w-full h-7 [&::-webkit-progress-value]:transition-all [&::-moz-progress-bar]:transition-all"
+        class="progress h-2 w-full [&::-webkit-progress-value]:transition-all [&::-moz-progress-bar]:transition-all motion-reduce:[&::-webkit-progress-value]:transition-none"
         :class="progressClass"
         :max="max"
         :value="value"
     />
-    <label
-        :for="composedId"
-        class="absolute text-white flex justify-center items-center text-sm align-middle text-center h-7 w-full top-0"
-    >
-      <slot/>
-    </label>
   </div>
 </template>
 
 <script setup lang="ts">
 import { computed, PropType } from 'vue';
 
-type ProgressVariant = 'primary' | 'warning' | 'error';
+type ProgressVariant = 'primary' | 'secondary' | 'success' | 'warning' | 'error';
 
 const PROGRESS_VARIANT_CLASS: Record<ProgressVariant, string> = {
   primary: 'progress-primary',
+  secondary: 'progress-secondary',
+  success: 'progress-success',
   warning: 'progress-warning',
   error: 'progress-error',
 };

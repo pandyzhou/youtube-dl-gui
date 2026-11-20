@@ -1,9 +1,7 @@
 <template>
-  <div class="flex flex-col">
+  <div class="flex flex-col gap-5">
     <SettingsInput v-model="settings" />
-    <div class="divider my-0" />
     <SettingsAppearance v-model="settings" />
-    <div class="divider my-0" />
     <SettingsNotifications v-model="settings" />
   </div>
 </template>

@@ -1,7 +1,7 @@
 <template>
   <section
     v-if="chapters.length"
-    class="rounded-box bg-base-100 p-4"
+    class="rounded-box border border-line bg-base-100 p-4"
     aria-labelledby="chapters-heading"
   >
     <div class="flex items-center justify-between gap-3">

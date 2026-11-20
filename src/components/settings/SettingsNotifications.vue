@@ -2,55 +2,61 @@
   <base-fieldset
       :legend="t('settings.notifications.legend')"
       :label="t('settings.notifications.legendLabel')"
+      rows
   >
-    <label class="font-semibold mt-2" for="notification-behavior">
-      {{ t('settings.notifications.behavior.label') }}
-    </label>
-    <select
-        id="notification-behavior"
-        v-model="settings.notifications.notificationBehavior"
-        class="select select-bordered"
+    <base-setting-row
+        :label="t('settings.notifications.behavior.label')"
+        :hint="t('settings.notifications.behavior.hint')"
+        label-for="notification-behavior"
     >
-      <option
-          v-for="behavior in notificationBehaviors"
-          :key="behavior.value"
-          :value="behavior.value"
+      <select
+          id="notification-behavior"
+          v-model="settings.notifications.notificationBehavior"
+          class="select w-56"
       >
-        {{ behavior.label }}
-      </option>
-    </select>
-    <p class="label">{{ t('settings.notifications.behavior.hint') }}</p>
-
-    <details
-        :tabindex="canShowNotifications ? undefined : -1"
-        class="collapse collapse-arrow bg-base-100 border-base-300 border max-w-2xl mt-4"
-        :class="{ 'opacity-50 cursor-not-allowed': !canShowNotifications }"
-    >
-      <summary class="collapse-title font-semibold" :class="{ 'cursor-not-allowed': !canShowNotifications }">
-        <h3 class="text-md">{{ t('settings.notifications.disabled.label') }}</h3>
-        <span v-if="!canShowNotifications" class="sr-only">{{ t('settings.notifications.disabled.disabledScreenReader') }}</span>
-      </summary>
-      <div class="collapse-content grid grid-rows-3 grid-flow-col gap-2">
-        <label
-            v-for="(label, kind) in notificationKindLabels"
-            :key="kind"
-            class="label cursor-pointer"
+        <option
+            v-for="behavior in notificationBehaviors"
+            :key="behavior.value"
+            :value="behavior.value"
         >
-          <input
-              type="checkbox"
-              class="toggle toggle-primary"
-              :checked="!isDisabled(kind as NotificationKind)"
-              @change="setDisabled(kind as NotificationKind, !($event.target as HTMLInputElement).checked)"
-          />
-          <span class="label-text">{{ label }}</span>
-        </label>
-      </div>
-    </details>
+          {{ behavior.label }}
+        </option>
+      </select>
+    </base-setting-row>
+
+    <div class="py-3.5 last:pb-0">
+      <details
+          :tabindex="canShowNotifications ? undefined : -1"
+          class="collapse collapse-arrow rounded-lg border border-line bg-field"
+          :class="{ 'opacity-50 cursor-not-allowed': !canShowNotifications }"
+      >
+        <summary class="collapse-title min-h-0 py-3 text-sm font-medium" :class="{ 'cursor-not-allowed': !canShowNotifications }">
+          <h3>{{ t('settings.notifications.disabled.label') }}</h3>
+          <span v-if="!canShowNotifications" class="sr-only">{{ t('settings.notifications.disabled.disabledScreenReader') }}</span>
+        </summary>
+        <div class="collapse-content grid grid-cols-1 gap-2 sm:grid-cols-2">
+          <label
+              v-for="(label, kind) in notificationKindLabels"
+              :key="kind"
+              class="flex cursor-pointer items-center gap-2.5 text-sm"
+          >
+            <input
+                type="checkbox"
+                class="toggle toggle-primary toggle-sm"
+                :checked="!isDisabled(kind as NotificationKind)"
+                @change="setDisabled(kind as NotificationKind, !($event.target as HTMLInputElement).checked)"
+            />
+            <span>{{ label }}</span>
+          </label>
+        </div>
+      </details>
+    </div>
   </base-fieldset>
 </template>
 
 <script setup lang="ts">
 import BaseFieldset from '../base/BaseFieldset.vue';
+import BaseSettingRow from '../base/BaseSettingRow.vue';
 import { NotificationBehavior, Settings } from '../../tauri/types/config.ts';
 import { useI18n } from 'vue-i18n';
 import { computed, ComputedRef } from 'vue';

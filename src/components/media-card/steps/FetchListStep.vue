@@ -1,8 +1,5 @@
 <template>
-  <div class="card-body py-0 pr-0 grow w-full min-w-0">
-    <h2 :title="group.title ?? group.url" class="card-title block leading-8 overflow-hidden text-nowrap text-ellipsis text-base">{{
-        group.title ?? group.url
-      }}</h2>
+  <div class="flex min-w-0 flex-col gap-2">
     <base-progress
         :id="`${group.id}-progress`"
         :max="group?.total"
@@ -10,7 +7,7 @@
     >
       {{ t('media.steps.fetch.progress', { percentage, done: group?.processed ?? '0', total: group?.total ?? '1' }) }}
     </base-progress>
-    <p>{{ t('media.steps.fetch.progressLabel') }}</p>
+    <p class="text-sm text-base-content/60">{{ t('media.steps.fetch.progressLabel') }}</p>
   </div>
 </template>
 

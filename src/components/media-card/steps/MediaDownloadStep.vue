@@ -1,15 +1,9 @@
 <template>
-  <div class="card-body py-0 pr-0 grow w-full overflow-hidden">
-    <h2
-        :title="group.title ?? group.url"
-        class="card-title block leading-8 overflow-hidden whitespace-nowrap overflow-ellipsis text-base"
-    >
-      {{ group.title ?? group.url }}
-    </h2>
-
+  <div class="flex min-w-0 flex-col gap-2">
     <base-progress
         v-if="isIndeterminate"
         :id="`${group.id}-progress`"
+        :variant="isTranslating ? 'secondary' : 'primary'"
     >
       {{ t('media.steps.download.indeterminate', { status: indeterminateDisplay }) }}
     </base-progress>
@@ -18,23 +12,27 @@
         :id="`${group.id}-progress`"
         :max="100"
         :value="percent"
+        :variant="isTranslating ? 'secondary' : 'primary'"
     >
       {{ progressLabel }}
     </base-progress>
 
-    <div v-if="!isIndeterminate && !isTranslating" class="w-full flex gap-4">
-      <p>
-        {{ t('media.steps.download.metadata.eta', { eta: etaDisplay }) }}
-      </p>
-      <p>
-        {{ t('media.steps.download.metadata.speed', { speed: speedDisplay }) }}
-      </p>
+    <div class="flex min-w-0 flex-wrap items-center gap-x-4 gap-y-2 text-sm text-base-content/70">
+      <template v-if="!isIndeterminate && !isTranslating">
+        <span class="tabular-nums">{{ t('media.steps.download.metadata.speed', { speed: speedDisplay }) }}</span>
+        <span class="tabular-nums">{{ t('media.steps.download.metadata.eta', { eta: etaDisplay }) }}</span>
+      </template>
+      <button type="button" class="btn btn-soft btn-sm ml-auto gap-1.5" @click="emit('pause')">
+        <pause-icon class="size-4" aria-hidden="true" />
+        {{ t('common.pause') }}
+      </button>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import { computed, PropType, ref, watch } from 'vue';
+import { PauseIcon } from '@heroicons/vue/24/solid';
 import { useMediaProgressStore } from '../../../stores/media/progress';
 import BaseProgress from '../../base/BaseProgress.vue';
 import { capitalizeFirstLetter } from '../../../helpers/progress';
@@ -52,6 +50,10 @@ const { group } = defineProps({
     required: true,
   },
 });
+
+const emit = defineEmits<{
+  (e: 'pause'): void;
+}>();
 
 const store = useMediaProgressStore();
 const progress = computed(() => store.findDownloadProgress(group.id));

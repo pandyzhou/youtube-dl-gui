@@ -1,35 +1,35 @@
 <template>
-  <the-header/>
-  <main class="flex-grow min-w-0 overflow-y-auto overflow-x-hidden h-full relative bg-base-200">
-    <router-view :key="$route.fullPath"/>
-    <the-updater/>
-  </main>
-  <the-footer/>
+  <div class="flex h-full min-h-0 w-full">
+    <the-sidebar />
+    <div class="flex min-w-0 flex-1 flex-col">
+      <!--
+        The link bar and the action bar belong to the queue, so they are only
+        shown there. v-show keeps them mounted: the link bar keeps watching the
+        clipboard and the action bar keeps the global format choice applied
+        while another page is open.
+      -->
+      <the-header v-show="isHome" />
+      <main class="relative min-h-0 min-w-0 flex-1 overflow-x-hidden overflow-y-auto bg-base-200">
+        <router-view :key="$route.fullPath" />
+      </main>
+      <the-footer v-show="isHome" />
+    </div>
+  </div>
 </template>
 <script setup lang="ts">
 import TheFooter from '../components/TheFooter.vue';
 import TheHeader from '../components/TheHeader.vue';
-import TheUpdater from '../components/TheUpdater.vue';
-import { ref, watch, watchEffect } from 'vue';
+import TheSidebar from '../components/TheSidebar.vue';
+import { computed, ref, watchEffect } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useMediaGroupStore } from '../stores/media/group.ts';
 
 const route = useRoute();
 const router = useRouter();
 const groupStore = useMediaGroupStore();
-const transitionName = ref('slide');
 const isMissingGroupRedirecting = ref(false);
 
-let prevIndex = route.meta.index || 0;
-
-watch(
-  () => route.fullPath,
-  () => {
-    const toIndex = route.meta.index ?? 0;
-    transitionName.value = toIndex > prevIndex ? 'slide-left' : 'slide-right';
-    prevIndex = toIndex;
-  },
-);
+const isHome = computed(() => route.name === 'home');
 
 watchEffect(() => {
   const requiresGroup = route.matched.some(record => record.meta.requiresGroup);
@@ -50,8 +50,8 @@ watchEffect(() => {
 </script>
 <style>
 #app {
-  @apply flex;
-  @apply h-screen;
-  @apply flex-col;
+  display: flex;
+  height: 100vh;
+  flex-direction: column;
 }
 </style>

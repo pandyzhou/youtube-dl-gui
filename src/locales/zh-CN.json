@@ -26,7 +26,8 @@
       "partial": "已将 {added} 个链接加入队列，跳过了 {skipped} 个无效项。",
       "noneFound": "在输入内容或文件中未找到有效链接。",
       "readError": "无法读取该文件。"
-    }
+    },
+    "pause": "暂停"
   },
   "layout": {
     "header": {
@@ -41,14 +42,19 @@
         "watchClipboardStart": "监听剪贴板",
         "watchClipboardStop": "停止监听剪贴板",
         "importFile": "导入链接",
-        "inputFilters": "筛选条件"
-      }
+        "inputFilters": "筛选条件",
+        "filtersOn": "已启用"
+      },
+      "title": "下载队列",
+      "subtitle": "可以一次粘贴多个链接；按住 Shift 点击“添加”会立即开始下载。",
+      "inputLabel": "要下载的链接"
     },
     "footer": {
       "progress": {
         "downloading": "正在下载队列 - 已完成 {done} / {total}。",
         "completed": "下载完成 – 已下载 {n} 个项目。 | 下载完成 – 已下载 {n} 个项目。",
-        "ready": "准备就绪！已将 {n} 个项目加入队列。 | 准备就绪！已将 {n} 个项目加入队列。"
+        "ready": "准备就绪！已将 {n} 个项目加入队列。 | 准备就绪！已将 {n} 个项目加入队列。",
+        "empty": "队列中还没有视频。"
       },
       "nav": {
         "downloadLocation": "位置",
@@ -78,7 +84,8 @@
           "noFormats": "没有可用格式",
           "placeholder": "选择格式",
           "screenReader": "为所有视频选择格式"
-        }
+        },
+        "label": "统一格式"
       },
       "queue": {
         "empty": "队列为空",
@@ -89,7 +96,20 @@
         "clearPending": "清除等待项",
         "cancelDownloading": "取消下载",
         "more": "更多队列操作"
-      }
+      },
+      "downloadAll": "全部下载"
+    },
+    "sidebar": {
+      "label": "主导航",
+      "queue": "下载队列",
+      "location": "下载位置",
+      "authentication": "登录与 Cookie",
+      "subtitles": "字幕与翻译",
+      "filters": "筛选条件",
+      "settings": "设置",
+      "enabled": "（已开启）",
+      "queueCount": "队列中有 {n} 项",
+      "version": "v{version}"
     }
   },
   "auth": {
@@ -155,7 +175,8 @@
     "toasts": {
       "error": "无法保存身份验证设置。{error}",
       "saved": "身份验证设置已保存！"
-    }
+    },
+    "pageSubtitle": "下载私享、会员专属等需要登录才能观看的视频"
   },
   "media": {
     "view": {
@@ -336,7 +357,8 @@
         "showFolder": "在文件夹中显示",
         "open": "打开文件",
         "openFirst": "打开第一个文件",
-        "undeterminedLocation": "无法确定此项目的下载位置。"
+        "undeterminedLocation": "无法确定此项目的下载位置。",
+        "badge": "已完成"
       },
       "error": {
         "errorPrefix": "错误 - {message}",
@@ -435,7 +457,8 @@
     "defaults": {
       "legend": "默认字幕",
       "hint": "当视频有字幕时使用。"
-    }
+    },
+    "pageSubtitle": "下载视频时一起保存字幕，也可以用 AI 生成中英双语字幕"
   },
   "location": {
     "title": "下载位置",
@@ -518,13 +541,15 @@
     "toasts": {
       "saved": "位置已保存！",
       "error": "无法保存位置。"
-    }
+    },
+    "pageSubtitle": "设置文件保存在哪里、按什么规则命名"
   },
   "settings": {
     "title": "设置",
     "reset": {
       "label": "重置",
-      "confirm": "再次点击以重置"
+      "confirm": "再次点击以重置",
+      "more": "更多选项"
     },
     "tabs": {
       "downloads": "下载",
@@ -1214,6 +1239,7 @@
     "toasts": {
       "saved": "输入筛选条件已保存！",
       "error": "无法保存输入筛选条件。{error}"
-    }
+    },
+    "pageSubtitle": "添加链接时，自动跳过不符合条件的视频"
   }
 }

@@ -26,7 +26,8 @@
       "partial": "已將 {added} 個連結加入佇列，並略過 {skipped} 個無效項目。",
       "noneFound": "在輸入內容或檔案中找不到有效連結。",
       "readError": "無法讀取該檔案。"
-    }
+    },
+    "pause": "暫停"
   },
   "layout": {
     "header": {
@@ -41,14 +42,19 @@
         "watchClipboardStart": "監看剪貼簿",
         "watchClipboardStop": "停止監看剪貼簿",
         "importFile": "匯入連結",
-        "inputFilters": "篩選條件"
-      }
+        "inputFilters": "篩選條件",
+        "filtersOn": "已啟用"
+      },
+      "title": "下載佇列",
+      "subtitle": "可以一次貼上多個連結；按住 Shift 點擊「新增」會立即開始下載。",
+      "inputLabel": "要下載的連結"
     },
     "footer": {
       "progress": {
         "downloading": "正在下載佇列 - 已完成 {done} / {total}。",
         "completed": "下載完成 – 已下載 {n} 個項目。 | 下載完成 – 已下載 {n} 個項目。",
-        "ready": "準備就緒！已加入 {n} 個項目至佇列。 | 準備就緒！已加入 {n} 個項目至佇列。"
+        "ready": "準備就緒！已加入 {n} 個項目至佇列。 | 準備就緒！已加入 {n} 個項目至佇列。",
+        "empty": "佇列中還沒有影片。"
       },
       "nav": {
         "downloadLocation": "位置",
@@ -78,7 +84,8 @@
           "noFormats": "沒有格式",
           "placeholder": "選取格式",
           "screenReader": "選取所有影片的格式"
-        }
+        },
+        "label": "統一格式"
       },
       "queue": {
         "empty": "佇列為空",
@@ -89,7 +96,20 @@
         "clearPending": "清除等候項目",
         "cancelDownloading": "取消下載",
         "more": "更多佇列操作"
-      }
+      },
+      "downloadAll": "全部下載"
+    },
+    "sidebar": {
+      "label": "主導覽",
+      "queue": "下載佇列",
+      "location": "下載位置",
+      "authentication": "登入與 Cookie",
+      "subtitles": "字幕與翻譯",
+      "filters": "篩選條件",
+      "settings": "設定",
+      "enabled": "（已開啟）",
+      "queueCount": "佇列中有 {n} 項",
+      "version": "v{version}"
     }
   },
   "auth": {
@@ -155,7 +175,8 @@
     "toasts": {
       "error": "無法儲存驗證設定。{error}",
       "saved": "驗證設定已儲存！"
-    }
+    },
+    "pageSubtitle": "下載私人、會員專屬等需要登入才能觀看的影片"
   },
   "media": {
     "view": {
@@ -336,7 +357,8 @@
         "showFolder": "在資料夾中顯示",
         "open": "開啟檔案",
         "openFirst": "開啟第一個檔案",
-        "undeterminedLocation": "無法判斷此項目的下載位置。"
+        "undeterminedLocation": "無法判斷此項目的下載位置。",
+        "badge": "已完成"
       },
       "error": {
         "errorPrefix": "錯誤 - {message}",
@@ -438,7 +460,8 @@
     "defaults": {
       "legend": "預設字幕",
       "hint": "當影片有字幕時使用。"
-    }
+    },
+    "pageSubtitle": "下載影片時一併儲存字幕，也可以用 AI 產生中英雙語字幕"
   },
   "location": {
     "title": "下載位置",
@@ -521,13 +544,15 @@
     "toasts": {
       "saved": "位置已儲存！",
       "error": "無法儲存位置。"
-    }
+    },
+    "pageSubtitle": "設定檔案儲存在哪裡、依什麼規則命名"
   },
   "settings": {
     "title": "設定",
     "reset": {
       "label": "重設",
-      "confirm": "再按一次以重設"
+      "confirm": "再按一次以重設",
+      "more": "更多選項"
     },
     "tabs": {
       "downloads": "下載",
@@ -1217,6 +1242,7 @@
     "toasts": {
       "saved": "輸入篩選條件已儲存！",
       "error": "無法儲存輸入篩選條件。{error}"
-    }
+    },
+    "pageSubtitle": "新增連結時，自動略過不符合條件的影片"
   }
 }

@@ -1,6 +1,6 @@
 <template>
-  <form class="py-4 px-8">
-    <div class="flex flex-col max-w-4xl">
+  <form class="mx-auto w-full max-w-4xl px-6 py-6">
+    <div class="flex flex-col gap-5">
       <base-fieldset
         :legend="t('settings.network.legend')"
         :badge="t('media.preferences.badges.override')"
@@ -8,7 +8,6 @@
       >
         <network-settings-editor v-model="networkState" id-prefix="override" />
       </base-fieldset>
-      <div class="divider mt-0 mb-2" />
       <base-fieldset
         :legend="t('auth.credentials.customHeaders.legend')"
         :badge="t('auth.credentials.customHeaders.legendBadge')"

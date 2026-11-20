@@ -5,36 +5,15 @@
   >
     <output-settings-editor v-model="outputState">
       <template #after-common>
-        <div class="mt-2 flex flex-col gap-4">
-          <div class="flex flex-col gap-1">
-            <p class="font-semibold">
-              {{ t('settings.output.location.label') }}
-            </p>
-            <router-link
-              class="text-primary group font-semibold flex gap-1 items-center"
-              :to="{ name: 'location' }"
-            >
-              {{ t('settings.output.location.link') }}
-              <arrow-right-icon
-                class="w-5 h-5 group-focus:translate-x-1 group-hover:translate-x-1 transition-transform"
-              />
-            </router-link>
-          </div>
-
-          <div class="flex flex-col gap-1">
-            <p class="font-semibold">
-              {{ t('settings.output.subtitles.label') }}
-            </p>
-            <router-link
-              class="text-primary group font-semibold flex gap-1 items-center"
-              :to="{ name: 'subtitles' }"
-            >
-              {{ t('settings.output.subtitles.link') }}
-              <arrow-right-icon
-                class="w-5 h-5 group-focus:translate-x-1 group-hover:translate-x-1 transition-transform"
-              />
-            </router-link>
-          </div>
+        <div class="mt-3 flex flex-wrap gap-2">
+          <router-link class="btn btn-soft btn-sm gap-1" :to="{ name: 'location' }">
+            {{ t('settings.output.location.link') }}
+            <chevron-right-icon class="size-4" aria-hidden="true" />
+          </router-link>
+          <router-link class="btn btn-soft btn-sm gap-1" :to="{ name: 'subtitles' }">
+            {{ t('settings.output.subtitles.link') }}
+            <chevron-right-icon class="size-4" aria-hidden="true" />
+          </router-link>
         </div>
       </template>
     </output-settings-editor>
@@ -46,7 +25,7 @@ import { computed } from 'vue';
 import BaseFieldset from '../base/BaseFieldset.vue';
 import OutputSettingsEditor from '../output/OutputSettingsEditor.vue';
 import { Settings } from '../../tauri/types/config';
-import { ArrowRightIcon } from '@heroicons/vue/24/solid';
+import { ChevronRightIcon } from '@heroicons/vue/24/outline';
 import { useI18n } from 'vue-i18n';
 
 const { t } = useI18n();

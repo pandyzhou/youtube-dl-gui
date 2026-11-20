@@ -1,140 +1,116 @@
 <template>
-  <footer class="p-4 bg-base-300 flex flex-col gap-4 justify-center w-full shadow-lg">
-    <base-progress v-if="isDownloading" :max="progress.total" :value="progress.done" id="total">
-      {{ t('layout.footer.progress.downloading', { done: progress.done, total: progress.total }) }}
-    </base-progress>
-    <base-progress v-else-if="isCompleted" :max="progress.total" :value="progress.done" id="total">
-      {{ t('layout.footer.progress.completed', progress.total) }}
-    </base-progress>
-    <base-progress v-else :max="1" :value="0" id="total">
-      {{ t('layout.footer.progress.ready', progress.ready) }}
-    </base-progress>
-    <div class="w-full flex max-w-4xl self-center justify-center">
-      <div class="join divide-x-2">
-        <base-button class="join-item" :to="{ name: 'location' }" :tooltip="t('layout.footer.nav.downloadLocation')">
-          <span class="sr-only">{{ t('layout.footer.nav.downloadLocation') }}</span>
-          <folder-icon class="w-5 h-5"/>
-        </base-button>
-        <base-toggle-button
-            :to="{ name: 'authentication' }"
-            :tooltip="hasAuthConfigured ? t('layout.footer.nav.login.tooltip.on') : t('layout.footer.nav.login.tooltip.off')"
-            :model-value="hasAuthConfigured"
-            class="join-item"
-        >
-          <template v-slot:on>
-            <span class="sr-only">{{ t('layout.footer.nav.login.screenReader.on') }}</span>
-            <key-icon-solid class="w-5 h-5"/>
+  <footer class="border-t border-line bg-base-100 px-6 py-3">
+    <div class="flex flex-wrap items-center gap-x-5 gap-y-3">
+      <div class="flex min-w-52 flex-1 flex-col gap-1.5">
+        <p class="truncate text-sm" :class="isCompleted ? 'text-success' : ''" aria-live="polite">
+          <template v-if="isDownloading">
+            {{ t('layout.footer.progress.downloading', { done: progress.done, total: progress.total }) }}
           </template>
-          <template v-slot:off>
-            <span class="sr-only">{{ t('layout.footer.nav.login.screenReader.off') }}</span>
-            <key-icon-outline class="w-5 h-5"/>
+          <template v-else-if="isCompleted">
+            {{ t('layout.footer.progress.completed', progress.total) }}
           </template>
-        </base-toggle-button>
-        <base-toggle-button
-            :to="{ name: 'subtitles' }"
-            :tooltip="t('layout.footer.nav.subtitles.tooltip')"
-            :model-value="hasSubtitlesEnabled"
-            class="join-item"
-        >
-          <template v-slot:on>
-            <span class="sr-only">{{ t('layout.footer.nav.subtitles.screenReader.on') }}</span>
-            <chat-bubble-bottom-center-text-icon class="w-5 h-5"/>
+          <template v-else-if="hasGroups">
+            {{ t('layout.footer.progress.ready', progress.ready) }}
           </template>
-          <template v-slot:off>
-            <div class="relative">
-              <span class="sr-only">{{ t('layout.footer.nav.subtitles.screenReader.off') }}</span>
-              <chat-bubble-bottom-center-icon class="w-5 h-5 absolute"/>
-            </div>
+          <template v-else>
+            {{ t('layout.footer.progress.empty') }}
           </template>
-        </base-toggle-button>
+        </p>
+        <progress
+            v-if="isDownloading || isCompleted"
+            class="progress h-1.5 w-full"
+            :class="isCompleted ? 'progress-success' : 'progress-primary'"
+            :max="progress.total"
+            :value="progress.done"
+        />
       </div>
-      <div class="divider divider-horizontal mx-2"></div>
-      <media-download-options
-          v-model="selectedOptions"
-          :formats="groupStore.getAllFormats()"
-          :auto-select="false"
-          locale-key="layout.footer.format"
-          class="w-fit grow"
-          join
-      />
-      <div class="divider divider-horizontal mx-2"></div>
-      <base-button-dropdown
-          placement="top"
-          align="end"
-          btnClass="btn-subtle"
-          :disabled="!hasGroups"
-          :caret-disabled="!hasQueueActions"
-          :mainTooltip="t('layout.footer.queue.empty')"
-          :caretAriaLabel="t('layout.footer.queue.more')"
-          caretClass="px-2"
-          @mainClick="clearGroups"
-      >
-        <template #main>
-          <span class="sr-only">{{ t('layout.footer.queue.empty') }}</span>
-          <trash-icon class="w-5 h-5" />
-        </template>
+      <div class="flex flex-wrap items-center gap-2">
+        <span class="text-sm whitespace-nowrap text-base-content/60" aria-hidden="true">
+          {{ t('layout.footer.format.label') }}
+        </span>
+        <media-download-options
+            v-model="selectedOptions"
+            :formats="groupStore.getAllFormats()"
+            :auto-select="false"
+            locale-key="layout.footer.format"
+            class="w-fit"
+            join
+        />
+        <base-button-dropdown
+            placement="top"
+            align="end"
+            btnClass="btn-soft"
+            :disabled="!hasGroups"
+            :caret-disabled="!hasQueueActions"
+            :mainTooltip="t('layout.footer.queue.empty')"
+            :caretAriaLabel="t('layout.footer.queue.more')"
+            @mainClick="clearGroups"
+        >
+          <template #main>
+            <span class="sr-only">{{ t('layout.footer.queue.empty') }}</span>
+            <trash-icon class="size-5" aria-hidden="true" />
+          </template>
 
-        <li>
-          <button class="gap-2 text-nowrap disabled:opacity-50 disabled:cursor-not-allowed" :disabled="!hasSuccessfulGroups" @click="clearSuccessfulGroups">
-            <broom-icon class="w-4 h-4" />
-            {{ t('layout.footer.queue.clearSuccessful') }}
-          </button>
-        </li>
-        <li>
-          <button class="gap-2 text-nowrap disabled:opacity-50 disabled:cursor-not-allowed" :disabled="!hasErroredGroups" @click="clearErroredGroups">
-            <broom-icon class="w-4 h-4" />
-            {{ t('layout.footer.queue.clearErrored') }}
-          </button>
-        </li>
-        <li>
-          <button class="gap-2 text-nowrap disabled:opacity-50 disabled:cursor-not-allowed" :disabled="!hasPendingGroups" @click="clearPendingGroups">
-            <broom-icon class="w-4 h-4" />
-            {{ t('layout.footer.queue.clearPending') }}
-          </button>
-        </li>
-        <li>
-          <button class="gap-2 text-nowrap disabled:opacity-50 disabled:cursor-not-allowed" :disabled="!hasDownloadingGroups" @click="cancelDownloadingGroups">
-            <x-mark-icon class="w-4 h-4" />
-            {{ t('layout.footer.queue.cancelDownloading') }}
-          </button>
-        </li>
-        <li>
-          <button class="gap-2 text-nowrap disabled:opacity-50 disabled:cursor-not-allowed" :disabled="!hasDownloadingGroups" @click="pauseAllGroups">
-            <pause-icon class="w-4 h-4" />
-            {{ t('layout.footer.queue.pause') }}
-          </button>
-        </li>
-        <li>
-          <button class="gap-2 text-nowrap disabled:opacity-50 disabled:cursor-not-allowed" :disabled="!hasPausedGroups" @click="resumeAllGroups">
-            <play-icon class="w-4 h-4" />
-            {{ t('layout.footer.queue.resume') }}
-          </button>
-        </li>
-      </base-button-dropdown>
-      <base-button class="btn-primary ml-2" :disabled="progress.ready <= 0" @click="downloadAll" :loading="isStartingDownload">
-        {{ t('common.download') }}
-      </base-button>
+          <li>
+            <button class="gap-2 text-nowrap disabled:opacity-50 disabled:cursor-not-allowed" :disabled="!hasSuccessfulGroups" @click="clearSuccessfulGroups">
+              <broom-icon class="w-4 h-4" />
+              {{ t('layout.footer.queue.clearSuccessful') }}
+            </button>
+          </li>
+          <li>
+            <button class="gap-2 text-nowrap disabled:opacity-50 disabled:cursor-not-allowed" :disabled="!hasErroredGroups" @click="clearErroredGroups">
+              <broom-icon class="w-4 h-4" />
+              {{ t('layout.footer.queue.clearErrored') }}
+            </button>
+          </li>
+          <li>
+            <button class="gap-2 text-nowrap disabled:opacity-50 disabled:cursor-not-allowed" :disabled="!hasPendingGroups" @click="clearPendingGroups">
+              <broom-icon class="w-4 h-4" />
+              {{ t('layout.footer.queue.clearPending') }}
+            </button>
+          </li>
+          <li>
+            <button class="gap-2 text-nowrap disabled:opacity-50 disabled:cursor-not-allowed" :disabled="!hasDownloadingGroups" @click="cancelDownloadingGroups">
+              <x-mark-icon class="w-4 h-4" />
+              {{ t('layout.footer.queue.cancelDownloading') }}
+            </button>
+          </li>
+          <li>
+            <button class="gap-2 text-nowrap disabled:opacity-50 disabled:cursor-not-allowed" :disabled="!hasDownloadingGroups" @click="pauseAllGroups">
+              <pause-icon class="w-4 h-4" />
+              {{ t('layout.footer.queue.pause') }}
+            </button>
+          </li>
+          <li>
+            <button class="gap-2 text-nowrap disabled:opacity-50 disabled:cursor-not-allowed" :disabled="!hasPausedGroups" @click="resumeAllGroups">
+              <play-icon class="w-4 h-4" />
+              {{ t('layout.footer.queue.resume') }}
+            </button>
+          </li>
+        </base-button-dropdown>
+        <base-button
+            class="btn-primary gap-1.5 px-5 whitespace-nowrap"
+            :disabled="progress.ready <= 0"
+            :loading="isStartingDownload"
+            @click="downloadAll"
+        >
+          <arrow-down-tray-icon class="size-5" aria-hidden="true" />
+          {{ t('layout.footer.downloadAll') }}
+        </base-button>
+      </div>
     </div>
   </footer>
 </template>
 
 <script setup lang="ts">
-import { FolderIcon, KeyIcon as KeyIconSolid, PauseIcon, PlayIcon, TrashIcon, XMarkIcon } from '@heroicons/vue/24/solid';
-import {
-  ChatBubbleBottomCenterIcon,
-  ChatBubbleBottomCenterTextIcon,
-  KeyIcon as KeyIconOutline,
-} from '@heroicons/vue/24/outline';
-import BaseProgress from './base/BaseProgress.vue';
-import { useSettingsStore } from '../stores/settings';
+import { PauseIcon, PlayIcon, XMarkIcon } from '@heroicons/vue/24/solid';
+import { ArrowDownTrayIcon, TrashIcon } from '@heroicons/vue/24/outline';
 import { computed, ref, watch } from 'vue';
 import BaseButton from './base/BaseButton.vue';
 import { useMediaStore } from '../stores/media/media';
 import { useMediaProgressStore } from '../stores/media/progress';
 import { DownloadOptions } from '../tauri/types/media';
 import { useMediaOptionsStore } from '../stores/media/options';
-import BaseToggleButton from './base/BaseToggleButton.vue';
-import { useStrongholdStore } from '../stores/stronghold';
 import { useI18n } from 'vue-i18n';
 import MediaDownloadOptions from './media-card/MediaDownloadOptions.vue';
 import { useMediaGroupStore } from '../stores/media/group.ts';
@@ -145,8 +121,6 @@ import BroomIcon from './icons/BroomIcon.vue';
 const i18n = useI18n();
 const t = i18n.t;
 
-const settingsStore = useSettingsStore();
-const strongholdStore = useStrongholdStore();
 const mediaStore = useMediaStore();
 const mediaStateStore = useMediaStateStore();
 const progressStore = useMediaProgressStore();
@@ -223,10 +197,6 @@ const resumeAllGroups = (): void => {
   mediaStore.resumeAllGroups();
 };
 
-const hasAuthConfigured = computed(() => {
-  return settingsStore.hasAuthConfigured() || strongholdStore.hasAvailableKeys();
-});
-const hasSubtitlesEnabled = computed(() => settingsStore.settings.subtitles.enabled);
 const hasGroups = computed(() => groupStore.countGroups() > 0);
 const hasSuccessfulGroups = computed(() => mediaStateStore.hasGroupWithState(MediaState.done));
 const hasErroredGroups = computed(() => mediaStateStore.hasGroupWithState(MediaState.error));

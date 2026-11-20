@@ -1,14 +1,14 @@
 <template>
-  <article class="card card-side w-full bg-base-300 shadow-lg">
+  <article class="card card-side w-full items-center border border-line bg-base-100">
     <div
         :key="tool.percent === 100 && !hasError ? 'done' : 'progress'"
-        class="relative m-5 h-20 w-20 shrink-0"
+        class="relative m-4 h-16 w-16 shrink-0"
         role="progressbar"
         :aria-valuemin="0"
         :aria-valuemax="100"
         :aria-valuenow="clampedPercent"
     >
-      <svg class="h-20 w-20 -rotate-90" viewBox="0 0 40 40" aria-hidden="true">
+      <svg class="h-16 w-16 -rotate-90" viewBox="0 0 40 40" aria-hidden="true">
         <circle
             cx="20"
             cy="20"
@@ -31,13 +31,13 @@
       </svg>
       <span class="absolute inset-0 flex items-center justify-center text-sm font-medium">
         <span v-if="tool.percent < 100">{{ t('common.percentage', { percent: tool.percent }) }}</span>
-        <span v-else-if="hasError"><x-mark-icon class="w-8 h-8 color-error-700"/></span>
-        <span v-else><check-icon class="w-8 h-8 color-primary-700"/></span>
+        <span v-else-if="hasError"><x-mark-icon class="size-7 text-error"/></span>
+        <span v-else><check-icon class="size-7 text-primary"/></span>
       </span>
     </div>
-    <div class="card-body">
-      <section class="flex w-full items-center gap-2 mb-2">
-        <h2 class="card-title">{{ name }}</h2>
+    <div class="card-body min-w-0 py-4 pl-0">
+      <section class="flex w-full items-center gap-2">
+        <h2 class="text-base font-semibold">{{ name }}</h2>
         <span
             v-if="tool.version"
             :title="tool.version"
@@ -47,10 +47,10 @@
           {{ tool.version }}
         </span>
       </section>
-      <p v-if="!hasError" class="mt-2">
+      <p v-if="!hasError" class="text-sm text-base-content/70 tabular-nums">
         {{ t('common.divide', { left: formatBytes(tool.received), right: formatBytes(tool.total) }) }}
       </p>
-      <details v-else class="collapse collapse-arrow bg-base-200 list-none">
+      <details v-else class="collapse collapse-arrow rounded-lg bg-field list-none">
         <summary class="collapse-title font-semibold py-2 px-4">
           {{ t('components.base.toolCard.failed') }}
         </summary>

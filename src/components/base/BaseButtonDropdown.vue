@@ -1,5 +1,5 @@
 <template>
-  <div class="join relative z-0 divide-x-2 focus-within:z-30">
+  <div class="join relative z-0 focus-within:z-30">
     <base-button
         class="join-item !rounded-r-none"
         :class="mainButtonClasses"
@@ -14,7 +14,7 @@
 
     <div class="dropdown relative" :class="dropdownClasses">
       <button
-          class="btn btn-subtle join-item px-1 !rounded-l-none"
+          class="btn join-item border-l border-l-base-content/10 px-1.5 !rounded-l-none"
           :class="caretButtonClasses"
           type="button"
           tabindex="0"
@@ -28,7 +28,7 @@
       </button>
 
       <ul
-          class="dropdown-content menu w-fit bg-base-100 rounded-box shadow z-50 border border-base-300"
+          class="dropdown-content menu z-50 my-1 w-fit rounded-box border border-line bg-base-100 p-1.5 shadow-xl"
           :class="menuClasses"
           tabindex="0"
           role="menu"

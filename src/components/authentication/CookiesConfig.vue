@@ -5,7 +5,7 @@
       :label="t('auth.cookies.legendLabel')"
   >
     <base-file-input
-        class="max-w-4xl"
+        class="w-full"
         v-model="authSettings.cookieFile"
         :label="t('auth.cookies.file.label')"
         :recent-values="recentValues"
@@ -21,13 +21,13 @@
         </template>
       </i18n-t>
     </span>
-    <label class="font-semibold mt-4" for="cookieBrowser">
+    <label class="mt-3 font-semibold" for="cookieBrowser">
       {{ t('auth.cookies.browser.label') }}
     </label>
     <select
         id="cookieBrowser"
         v-model="authSettings.cookieBrowser"
-        class="select w-1/2 max-w-4xl"
+        class="select w-full max-w-sm"
     >
       <option value="none">{{ t('auth.cookies.browser.placeholder') }}</option>
       <option

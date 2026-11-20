@@ -1,39 +1,41 @@
 <template>
-  <section class="flex flex-row gap-6 py-4 px-8">
-    <figure class="flex-grow-0 flex-shrink-1 aspect-video w-full max-w-100">
+  <section class="mx-auto flex w-full max-w-4xl flex-col gap-5 px-6 pt-6 md:flex-row">
+    <figure class="aspect-video w-full shrink-0 overflow-hidden rounded-box bg-base-300 md:w-80">
       <img
         :src="group?.thumbnail ?? placeholderUrl"
         :alt="t('media.view.thumbnailAlt', { title: group?.title ?? group?.url ?? t('common.video') })"
-        class="aspect-video rounded-box object-cover"
+        class="h-full w-full object-cover"
         @error="setPlaceholderImage"
       />
     </figure>
-    <div class="min-w-0 flex-1">
-      <h1 class="break-words text-xl font-semibold">{{ group?.title ?? group?.url }}</h1>
-      <ul v-if="metadataItems.length" class="list w-full">
-        <li v-for="item in metadataItems" :key="item.label" class="list-row">
-          <p class="font-semibold">{{ item.label }}</p>
-          <a
-            v-if="item.href"
-            class="link break-all"
-            target="_blank"
-            rel="noopener"
-            :href="item.href"
-          >
-            {{ item.value }}
-          </a>
-          <p v-else>{{ item.value }}</p>
-        </li>
-      </ul>
+    <div class="flex min-w-0 flex-1 flex-col gap-3">
+      <h1 class="text-xl font-semibold break-words">{{ group?.title ?? group?.url }}</h1>
+      <dl v-if="metadataItems.length" class="flex flex-col divide-y divide-line rounded-box border border-line bg-base-100 text-sm">
+        <div v-for="item in metadataItems" :key="item.label" class="flex gap-3 px-4 py-2.5">
+          <dt class="w-24 shrink-0 text-base-content/60">{{ item.label }}</dt>
+          <dd class="min-w-0 flex-1">
+            <a
+              v-if="item.href"
+              class="link link-primary break-all"
+              target="_blank"
+              rel="noopener"
+              :href="item.href"
+            >
+              {{ item.value }}
+            </a>
+            <span v-else class="break-words">{{ item.value }}</span>
+          </dd>
+        </div>
+      </dl>
     </div>
   </section>
-  <section class="flex flex-col gap-4 pb-4 pt-0 px-8">
-    <div class="media-stats-scroll overflow-x-auto overflow-y-hidden pb-2">
+  <section class="mx-auto flex w-full max-w-4xl flex-col gap-5 px-6 pt-5 pb-6">
+    <div class="media-stats-scroll overflow-x-auto overflow-y-hidden">
       <base-media-stats v-if="group" :item="group" />
     </div>
-    <div class="rounded-box p-4 bg-base-100" v-if="group?.description">
-      <h2 class="font-semibold mb-3">{{ t('media.view.metadata.description') }}</h2>
-      <p class="max-h-44 whitespace-pre overflow-y-auto">
+    <div class="rounded-box border border-line bg-base-100 p-4" v-if="group?.description">
+      <h2 class="mb-2 text-[15px] font-semibold">{{ t('media.view.metadata.description') }}</h2>
+      <p class="max-h-56 overflow-y-auto text-sm leading-6 whitespace-pre-wrap text-base-content/80">
         {{ group.description }}
       </p>
     </div>

@@ -1,5 +1,5 @@
 <template>
-  <section class="stats" aria-labelledby="stats-heading">
+  <section class="stats rounded-box border border-line bg-base-100" aria-labelledby="stats-heading">
     <h2 id="stats-heading" class="sr-only">{{ t('media.view.stats.title') }}</h2>
 
     <article class="stat" v-if="item.views">

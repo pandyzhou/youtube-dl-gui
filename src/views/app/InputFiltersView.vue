@@ -4,6 +4,7 @@
       <template #default>
         <base-button
           type="button"
+          class="btn-ghost"
           :disabled="!canReset || isSaving"
           @click="reset"
         >
@@ -19,11 +20,14 @@
         </base-button>
       </template>
       <template #title>
-        <h1 class="self-center text-lg font-semibold">{{ t('inputFilters.title') }}</h1>
+        <div class="min-w-0">
+          <h1 class="text-xl font-semibold">{{ t('layout.sidebar.filters') }}</h1>
+          <p class="text-sm text-base-content/60">{{ t('inputFilters.pageSubtitle') }}</p>
+        </div>
       </template>
     </base-sub-nav>
 
-    <section class="flex flex-col gap-4 px-8 py-4">
+    <section class="mx-auto flex w-full max-w-3xl flex-col gap-5 px-6 py-6">
       <base-fieldset
         :legend="t('inputFilters.dates.legend')"
         :label="t('inputFilters.dates.hint')"

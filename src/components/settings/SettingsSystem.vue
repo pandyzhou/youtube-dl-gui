@@ -2,26 +2,27 @@
   <base-fieldset
       :legend="t('settings.system.legend')"
       :label="t('settings.system.legendLabel')"
+      rows
   >
-    <label v-if="isMac" class="font-semibold mt-2" for="trayEnabled">
-      {{ t('settings.system.trayEnabled.label.mac') }}
-    </label>
-    <label v-else class="font-semibold mt-2" for="trayEnabled">
-      {{ t('settings.system.trayEnabled.label.generic') }}
-    </label>
-    <input
-        id="trayEnabled"
-        type="checkbox"
-        v-model="settings.system.trayEnabled"
-        class="toggle toggle-primary"
-    />
-    <p class="label" v-if="isMac">{{ t('settings.system.trayEnabled.hint.mac') }}</p>
-    <p class="label" v-else>{{ t('settings.system.trayEnabled.hint.generic') }}</p>
-
-    <template v-if="!isMac">
-      <label class="font-semibold mt-2" for="minimiseToTray">
-        {{ t('settings.system.minimiseToTray.label') }}
-      </label>
+    <base-setting-row
+        :label="isMac ? t('settings.system.trayEnabled.label.mac') : t('settings.system.trayEnabled.label.generic')"
+        :hint="isMac ? t('settings.system.trayEnabled.hint.mac') : t('settings.system.trayEnabled.hint.generic')"
+        label-for="trayEnabled"
+    >
+      <input
+          id="trayEnabled"
+          type="checkbox"
+          v-model="settings.system.trayEnabled"
+          class="toggle toggle-primary"
+      />
+    </base-setting-row>
+    <base-setting-row
+        v-if="!isMac"
+        :label="t('settings.system.minimiseToTray.label')"
+        :hint="t('settings.system.minimiseToTray.hint')"
+        :disabled="settings.system.trayEnabled === false"
+        label-for="minimiseToTray"
+    >
       <input
           :disabled="settings.system.trayEnabled === false"
           id="minimiseToTray"
@@ -29,41 +30,39 @@
           v-model="minimiseToTray"
           class="toggle toggle-primary"
       />
-      <p class="label">{{ t('settings.system.minimiseToTray.hint') }}</p>
-    </template>
-    <label class="font-semibold mt-2" for="autoStart">
-      {{ t('settings.system.autoStart.label') }}
-    </label>
-    <input
-        id="autoStart"
-        type="checkbox"
-        v-model="settings.system.autoStartEnabled"
-        class="toggle toggle-primary"
-    />
-    <p class="label">{{ t('settings.system.autoStart.hint') }}</p>
-    <label v-if="!isMac" class="font-semibold mt-2" for="autoStartMinimised">
-      {{ t('settings.system.autoStartMinimised.label.windows') }}
-    </label>
-    <label v-else-if="isMac" class="font-semibold mt-2" for="autoStartMinimised">
-      {{ t('settings.system.autoStartMinimised.label.mac') }}
-    </label>
-    <label v-else class="font-semibold mt-2" for="autoStartMinimised">
-      {{ t('settings.system.autoStartMinimised.label.generic') }}
-    </label>
-    <input
+    </base-setting-row>
+    <base-setting-row
+        :label="t('settings.system.autoStart.label')"
+        :hint="t('settings.system.autoStart.hint')"
+        label-for="autoStart"
+    >
+      <input
+          id="autoStart"
+          type="checkbox"
+          v-model="settings.system.autoStartEnabled"
+          class="toggle toggle-primary"
+      />
+    </base-setting-row>
+    <base-setting-row
+        :label="autoStartMinimisedLabel"
+        :hint="autoStartMinimisedHint"
         :disabled="!settings.system.autoStartEnabled || (!isMac && !settings.system.trayEnabled)"
-        id="autoStartMinimised"
-        type="checkbox"
-        v-model="settings.system.autoStartMinimised"
-        class="toggle toggle-primary"
-    />
-    <p class="label" v-if="isMac">{{ t('settings.system.autoStartMinimised.hint.mac') }}</p>
-    <p class="label" v-else-if="isWindows">{{ t('settings.system.autoStartMinimised.hint.windows') }}</p>
-    <p class="label" v-else>{{ t('settings.system.autoStartMinimised.hint.generic') }}</p>  </base-fieldset>
+        label-for="autoStartMinimised"
+    >
+      <input
+          :disabled="!settings.system.autoStartEnabled || (!isMac && !settings.system.trayEnabled)"
+          id="autoStartMinimised"
+          type="checkbox"
+          v-model="settings.system.autoStartMinimised"
+          class="toggle toggle-primary"
+      />
+    </base-setting-row>
+  </base-fieldset>
 </template>
 
 <script setup lang="ts">
 import BaseFieldset from '../base/BaseFieldset.vue';
+import BaseSettingRow from '../base/BaseSettingRow.vue';
 import { CloseBehavior, Settings } from '../../tauri/types/config.ts';
 import { useI18n } from 'vue-i18n';
 import { computed, watch } from 'vue';
@@ -73,6 +72,16 @@ const { t } = useI18n();
 const { isWindows, isMac } = usePlatform();
 
 const settings = defineModel<Settings>({ required: true });
+
+const autoStartMinimisedLabel = computed(() => isMac.value
+  ? t('settings.system.autoStartMinimised.label.mac')
+  : t('settings.system.autoStartMinimised.label.windows'));
+
+const autoStartMinimisedHint = computed(() => {
+  if (isMac.value) return t('settings.system.autoStartMinimised.hint.mac');
+  if (isWindows.value) return t('settings.system.autoStartMinimised.hint.windows');
+  return t('settings.system.autoStartMinimised.hint.generic');
+});
 const minimiseToTray = computed<boolean>({
   get: () => settings.value.system.closeBehavior === CloseBehavior.Hide && settings.value.system.trayEnabled === true,
   set: (value) => {

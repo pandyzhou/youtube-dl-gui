@@ -2,56 +2,58 @@
   <base-fieldset
       :legend="t('settings.appearance.legend')"
       :label="t('settings.appearance.legendLabel')"
+      rows
   >
-    <label class="font-semibold" for="theme">
-      {{ t('settings.appearance.theme.label') }}
-    </label>
-    <select
-        id="theme"
-        v-model="settings.appearance.theme"
-        class="select mb-2"
+    <base-setting-row :label="t('settings.appearance.theme.label')" label-for="theme">
+      <select
+          id="theme"
+          v-model="settings.appearance.theme"
+          class="select w-56"
+      >
+        <option value="system">
+          {{
+            t('settings.appearance.theme.options.system', {
+              theme: systemTheme === 'dark'
+                  ? t('settings.appearance.theme.options.dark')
+                  : t('settings.appearance.theme.options.light')
+            })
+          }}
+        </option>
+        <option value="light">{{ t('settings.appearance.theme.options.light') }}</option>
+        <option value="dark">{{ t('settings.appearance.theme.options.dark') }}</option>
+      </select>
+    </base-setting-row>
+    <base-setting-row :label="t('settings.appearance.language.label')" label-for="language">
+      <select
+          id="language"
+          v-model="settings.appearance.language"
+          class="select w-56"
+      >
+        <option value="system">{{ t('settings.appearance.language.options.system', { language: systemLocale }) }}</option>
+        <option v-for="option in languageOptions()" :key="option.value" :value="option.value">{{ option.label }}</option>
+      </select>
+    </base-setting-row>
+    <base-setting-row
+        :label="t('settings.appearance.expandedOptions.label')"
+        :hint="t('settings.appearance.expandedOptions.hint')"
+        label-for="expandedOptions"
     >
-      <option value="system">
-        {{
-          t('settings.appearance.theme.options.system', {
-            theme: systemTheme === 'dark'
-                ? t('settings.appearance.theme.options.dark')
-                : t('settings.appearance.theme.options.light')
-          })
-        }}
-      </option>
-      <option value="light">{{ t('settings.appearance.theme.options.light') }}</option>
-      <option value="dark">{{ t('settings.appearance.theme.options.dark') }}</option>
-    </select>
-    <label class="font-semibold mb-2" for="language">
-      {{ t('settings.appearance.language.label') }}
-    </label>
-    <select
-        id="language"
-        v-model="settings.appearance.language"
-        class="select mb-2"
-    >
-      <option value="system">{{ t('settings.appearance.language.options.system', { language: systemLocale }) }}</option>
-      <option v-for="option in languageOptions()" :key="option.value" :value="option.value">{{ option.label }}</option>
-    </select>
-    <label class="font-semibold" for="expandedOptions">
-      {{ t('settings.appearance.expandedOptions.label') }}
-    </label>
-    <select
-        id="expandedOptions"
-        v-model="settings.appearance.expandedOptions"
-        class="select"
-    >
-      <option value="none">{{ t('settings.appearance.expandedOptions.options.none') }}</option>
-      <option value="encodings">{{ t('settings.appearance.expandedOptions.options.encodings') }}</option>
-      <option value="tracks">{{ t('settings.appearance.expandedOptions.options.tracks') }}</option>
-    </select>
-    <p class="label">{{ t('settings.appearance.expandedOptions.hint') }}</p>
+      <select
+          id="expandedOptions"
+          v-model="settings.appearance.expandedOptions"
+          class="select w-56"
+      >
+        <option value="none">{{ t('settings.appearance.expandedOptions.options.none') }}</option>
+        <option value="encodings">{{ t('settings.appearance.expandedOptions.options.encodings') }}</option>
+        <option value="tracks">{{ t('settings.appearance.expandedOptions.options.tracks') }}</option>
+      </select>
+    </base-setting-row>
   </base-fieldset>
 </template>
 
 <script setup lang="ts">
 import BaseFieldset from '../base/BaseFieldset.vue';
+import BaseSettingRow from '../base/BaseSettingRow.vue';
 import { Settings } from '../../tauri/types/config.ts';
 import { useI18n } from 'vue-i18n';
 import { computed } from 'vue';

@@ -1,7 +1,7 @@
 <template>
   <component
       :is="hasDetails ? 'details' : 'section'"
-      class="collapse bg-base-100 border-base-300 border"
+      class="collapse rounded-box border border-line bg-base-100"
       :class="{ 'collapse-arrow': hasDetails, 'cursor-auto': !hasDetails }"
   >
     <component
@@ -27,11 +27,11 @@
     </component>
     <div v-if="hasDetails" class="collapse-content text-sm flex flex-col gap-2">
       <p
-          class="max-h-44 text-wrap overflow-y-scroll bg-base-200 p-4 rounded-box"
+          class="max-h-44 overflow-y-auto rounded-lg bg-field p-4 font-mono text-xs leading-5 text-wrap"
           v-if="diagnostic.raw"
           v-html="diagnosticDisplay.raw"
       />
-      <button @click="report" v-if="isReportable" :disabled="hasReported" class="btn btn-subtle">
+      <button @click="report" v-if="isReportable" :disabled="hasReported" class="btn btn-soft btn-sm self-start">
         <template v-if="isReporting">
           <span class="sr-only">{{ t('common.loading') }}</span>
           <span class="loading loading-spinner loading-sm"></span>

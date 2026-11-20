@@ -1,9 +1,9 @@
 <template>
-  <section class="py-4 px-8">
-    <h2 class="text-lg font-semibold mb-2">
+  <section class="mx-auto w-full max-w-4xl px-6 pt-5 last:pb-6">
+    <h2 class="mb-2 text-[15px] font-semibold">
       {{ t('media.view.logs.errors.count', { count: errors.length }) }}
     </h2>
-    <ul v-if="errors.length > 0" class="flex flex-col gap-4">
+    <ul v-if="errors.length > 0" class="flex flex-col gap-3">
       <li v-for="(error, index) in errors" :key="error.id + error.code + error.timestamp">
         <diagnostic-card :open="index === 0" :diagnostic="error"/>
       </li>
@@ -13,11 +13,11 @@
       <span>{{ t('media.view.logs.errors.empty') }}</span>
     </div>
   </section>
-  <section class="py-4 px-8">
-    <h2 class="text-lg font-semibold mb-2">
+  <section class="mx-auto w-full max-w-4xl px-6 pt-5 last:pb-6">
+    <h2 class="mb-2 text-[15px] font-semibold">
       {{ t('media.view.logs.skipped.count', { count: skippedCount }) }}
     </h2>
-    <ul v-if="skippedGroups.length > 0" class="flex flex-col gap-4">
+    <ul v-if="skippedGroups.length > 0" class="flex flex-col gap-3">
       <li v-for="group in skippedGroups" :key="group.message">
         <div class="alert alert-warning alert-soft flex items-center justify-between gap-4">
           <span>{{ group.message }}</span>
@@ -32,11 +32,11 @@
       <span>{{ t('media.view.logs.skipped.empty') }}</span>
     </div>
   </section>
-  <section class="py-4 px-8">
-    <h2 class="text-lg font-semibold mb-2">
+  <section class="mx-auto w-full max-w-4xl px-6 pt-5 last:pb-6">
+    <h2 class="mb-2 text-[15px] font-semibold">
       {{ t('media.view.logs.warnings.count', { count: warnings.length }) }}
     </h2>
-    <ul v-if="warnings.length > 0" class="flex flex-col gap-4">
+    <ul v-if="warnings.length > 0" class="flex flex-col gap-3">
       <li v-for="warning in warnings" :key="warning.id + warning.code + warning.timestamp">
         <diagnostic-card :diagnostic="warning"/>
       </li>
@@ -46,8 +46,8 @@
       <span>{{ t('media.view.logs.warnings.empty') }}</span>
     </div>
   </section>
-  <section class="py-4 px-8">
-    <h2 class="text-lg font-semibold mb-2">
+  <section class="mx-auto w-full max-w-4xl px-6 pt-5 last:pb-6">
+    <h2 class="mb-2 text-[15px] font-semibold">
       {{ t('media.view.logs.all.title') }}
     </h2>
     <div class="text-sm flex flex-col gap-2">
@@ -55,7 +55,7 @@
           v-if="hasLog"
           role="log"
           aria-live="off"
-          class="max-h-64 overflow-y-auto bg-base-300 border border-base-200 rounded-box py-3 px-4 font-mono whitespace-pre-wrap text-xs leading-6"
+          class="max-h-80 overflow-y-auto rounded-box border border-line bg-field px-4 py-3 font-mono text-xs leading-6 whitespace-pre-wrap"
           v-html="linkifiedGroupLog"
       />
       <div v-else class="alert alert-info alert-soft">

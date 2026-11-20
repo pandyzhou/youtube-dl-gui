@@ -1,10 +1,10 @@
 <template>
-  <div class="toast toast-start toast-bottom bottom-32 fixed z-50">
+  <div class="toast toast-end toast-bottom fixed right-2 bottom-28 z-50 max-w-sm">
     <TransitionGroup name="toast-fade" tag="div">
       <div
           v-for="toast in toasts"
           :key="toast.id"
-          class="alert cursor-pointer mb-2"
+          class="alert mb-2 cursor-pointer border-line text-sm whitespace-normal shadow-lg"
           :class="styleClass(toast.style)"
           @click="removeToast(toast.id)"
       >
@@ -26,7 +26,7 @@ const styleClass = (style: ToastStyle) => {
     'alert-info': style === 'info',
     'alert-error': style === 'error',
     'alert-warning': style === 'warning',
-    '': style === 'subtle',
+    'bg-base-100': style === 'subtle',
   };
 };
 </script>

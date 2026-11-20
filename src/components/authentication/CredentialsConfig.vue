@@ -1,17 +1,18 @@
 <template>
-  <details data-testid="auth-details" class="collapse collapse-arrow bg-base-100 border-base-300 border max-w-4xl" :open="strongholdStore.hasAvailableKeys()">
-    <summary class="collapse-title font-semibold">
-      <h3 class="text-lg">{{ t('auth.credentials.title') }}</h3>
-      <span class="label text-[0.75rem] font-normal">{{ t('auth.credentials.description') }}</span>
+  <details data-testid="auth-details" class="collapse collapse-arrow rounded-box border border-line bg-base-100" :open="strongholdStore.hasAvailableKeys()">
+    <summary class="collapse-title">
+      <h3 class="text-[15px] font-semibold">{{ t('auth.credentials.title') }}</h3>
+      <span class="text-sm text-base-content/60">{{ t('auth.credentials.description') }}</span>
     </summary>
     <div class="collapse-content">
       <credentials-init
           v-if="!strongholdStore.status.unlocked"
       />
-      <div v-else>
+      <div v-else class="grid grid-cols-1 gap-x-8 gap-y-6 pt-2 md:grid-cols-2">
         <base-fieldset
             :legend="t('auth.credentials.basicAuth.legend')"
             :label="t('auth.credentials.basicAuth.legendLabel')"
+            flat
         >
           <base-secret-input
               v-model="strongholdFields.username"
@@ -26,11 +27,10 @@
           />
         </base-fieldset>
 
-        <div class="divider my-2" />
-
         <base-fieldset
             :legend="t('auth.credentials.videoPassword.legend')"
             :label="t('auth.credentials.videoPassword.legendLabel')"
+            flat
         >
           <base-secret-input
               v-model="strongholdFields.videoPassword"
@@ -40,11 +40,10 @@
           />
         </base-fieldset>
 
-        <div class="divider my-2" />
-
         <base-fieldset
             :legend="t('auth.credentials.bearerToken.legend')"
             :label="t('auth.credentials.bearerToken.legendLabel')"
+            flat
         >
           <base-secret-input
               v-model="strongholdFields.bearer"
@@ -54,18 +53,17 @@
           />
         </base-fieldset>
 
-        <div class="divider my-2" />
-
         <base-fieldset
             :legend="t('auth.credentials.customHeaders.legend')"
             :badge="t('auth.credentials.customHeaders.legendBadge')"
             :label="t('auth.credentials.customHeaders.legendLabel')"
+            flat
         >
-          <label for="custom-headers" class="label">
-            <span class="font-semibold">{{ t('auth.credentials.labels.headers') }}</span>
+          <label for="custom-headers" class="mb-0.5 block text-sm font-medium">
+            {{ t('auth.credentials.labels.headers') }}
           </label>
           <textarea
-              class="textarea rounded-xl w-full"
+              class="textarea w-full font-mono text-xs"
               rows="3"
               id="custom-headers"
               v-model="strongholdFields.headers"

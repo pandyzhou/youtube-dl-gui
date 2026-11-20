@@ -1,6 +1,6 @@
 <template>
   <div class="flex flex-col gap-3">
-    <div class="rounded-box bg-base-100 p-4">
+    <div class="rounded-lg border border-line p-4">
       <div class="grid gap-3">
         <div class="grid grid-cols-2 gap-3">
           <div>

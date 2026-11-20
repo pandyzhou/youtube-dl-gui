@@ -8,8 +8,7 @@
             btnClass="btn-primary"
             :mainDisabled="!hasChanges || isResetting"
             :mainLoading="isSaving"
-            :caretAriaLabel="t('layout.footer.queue.more')"
-            caretClass="px-2"
+            :caretAriaLabel="t('settings.reset.more')"
             mainType="submit"
         >
           <template #main>
@@ -24,26 +23,27 @@
         </base-button-dropdown>
       </template>
       <template v-slot:title>
-        <div role="tablist" class="tabs tabs-box flex gap-1">
-          <router-link exactActiveClass="tab-active" role="tab" :to="{ name: 'settings.downloads' }" class="tab">
+        <h1 class="text-xl font-semibold">{{ t('settings.title') }}</h1>
+        <div role="tablist" class="seg-tabs">
+          <router-link exactActiveClass="tab-active" role="tab" :to="{ name: 'settings.downloads' }" class="seg-tab">
             {{ t('settings.tabs.downloads') }}
           </router-link>
-          <router-link exactActiveClass="tab-active" role="tab" :to="{ name: 'settings.app' }" class="tab">
+          <router-link exactActiveClass="tab-active" role="tab" :to="{ name: 'settings.app' }" class="seg-tab">
             {{ t('settings.tabs.app') }}
           </router-link>
-          <router-link exactActiveClass="tab-active" role="tab" :to="{ name: 'settings.network' }" class="tab">
+          <router-link exactActiveClass="tab-active" role="tab" :to="{ name: 'settings.network' }" class="seg-tab">
             {{ t('settings.tabs.network') }}
           </router-link>
-          <router-link exactActiveClass="tab-active" role="tab" :to="{ name: 'settings.system' }" class="tab">
+          <router-link exactActiveClass="tab-active" role="tab" :to="{ name: 'settings.system' }" class="seg-tab">
             {{ t('settings.tabs.system') }}
           </router-link>
-          <router-link exactActiveClass="tab-active" role="tab" :to="{ name: 'settings.about' }" class="tab">
+          <router-link exactActiveClass="tab-active" role="tab" :to="{ name: 'settings.about' }" class="seg-tab">
             {{ t('settings.tabs.about') }}
           </router-link>
         </div>
       </template>
     </base-sub-nav>
-    <section class="flex flex-col py-4 px-8">
+    <section class="mx-auto flex w-full max-w-3xl flex-col gap-5 px-6 py-6">
       <router-view v-slot="{ Component }">
         <component :is="Component" v-model="draft" />
       </router-view>
@@ -96,25 +96,3 @@ const resetSettings = async () => {
   }
 };
 </script>
-
-<style scoped>
-.tabs.tabs-box {
-  background-color: var(--color-base-200);
-  border-radius: var(--radius-box);
-}
-
-.tab {
-  color: var(--color-base-content);
-  border-radius: var(--radius-field);
-  transition: background-color 0.15s ease, color 0.15s ease;
-}
-
-.tab:hover:not(.tab-active) {
-  background-color: var(--color-neutral);
-}
-
-.tab-active {
-  background-color: var(--color-neutral);
-  border: var(--border) solid var(--color-primary);
-}
-</style>

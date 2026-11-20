@@ -1,5 +1,5 @@
 <template>
-  <p class="font-semibold">{{ label }}</p>
+  <p class="text-[15px] font-semibold">{{ label }}</p>
 
   <div class="join group w-full" v-bind="$attrs">
     <div class="relative w-full">
@@ -41,7 +41,7 @@
         <chevron-down-icon class="w-5 h-5"/>
       </button>
 
-      <ul tabindex="0" class="dropdown-content menu bg-base-300 rounded-box shadow w-96 p-2">
+      <ul tabindex="0" class="dropdown-content menu z-30 my-1 w-96 max-w-[80vw] rounded-box border border-line bg-base-100 p-1.5 shadow-xl">
         <li v-for="recentValue in recentValues" :key="recentValue">
           <button type="button" class="justify-between" @click="selectRecent($event, recentValue)">
             <span tabindex="-1" class="truncate" v-if="!directory" :title="basename(recentValue)">{{ basename(recentValue) }}</span>

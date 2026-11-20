@@ -6,8 +6,8 @@
     <select
         v-model="selectedTrackType"
         :id="trackSelectId"
-        class="select select-primary"
-        :class="{ 'join-item': join }"
+        class="select w-auto min-w-28 max-w-full"
+        :class="{ 'join-item': join, 'select-sm': size === 'sm' }"
     >
       <option
           v-for="trackType in trackOptions"
@@ -24,8 +24,8 @@
     <select
         v-model="selectedFormatId"
         :id="formatSelectId"
-        class="select select-primary"
-        :class="{ 'join-item': join }"
+        class="select w-auto min-w-28 max-w-full"
+        :class="{ 'join-item': join, 'select-sm': size === 'sm' }"
         :disabled="formatOptions.length === 0"
         :key="selectedTrackType"
     >
@@ -84,6 +84,10 @@ const props = defineProps({
   join: {
     type: Boolean,
     default: false,
+  },
+  size: {
+    type: String as PropType<'sm' | 'md'>,
+    default: 'md',
   },
 });
 

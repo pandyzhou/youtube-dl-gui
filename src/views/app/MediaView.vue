@@ -1,12 +1,12 @@
 <template>
   <article>
-    <base-sub-nav>
-      <button v-if="isPaused" @click="downloadItem" class="btn btn-warning">{{ t('common.resume') }}</button>
-      <button v-else @click="downloadItem" class="btn btn-primary">{{ t('common.download') }}</button>
+    <base-sub-nav back-button>
+      <button v-if="isPaused" @click="downloadItem" class="btn btn-warning gap-1.5"><play-icon class="size-4" aria-hidden="true" />{{ t('common.resume') }}</button>
+      <button v-else @click="downloadItem" class="btn btn-primary gap-1.5"><arrow-down-tray-icon class="size-4" aria-hidden="true" />{{ t('common.download') }}</button>
       <template v-slot:title>
-        <div role="tablist" class="tabs tabs-box flex gap-2">
-          <router-link exactActiveClass="tab-active" role="tab" :to="{ name: 'group.metadata', params: { groupId } }" class="tab">{{ t('media.view.tabs.metadata') }}</router-link>
-          <router-link exactActiveClass="tab-active" role="tab" :to="{ name: 'group.logs', params: { groupId } }" class="tab">{{ t('media.view.tabs.logs') }}</router-link>
+        <div role="tablist" class="seg-tabs">
+          <router-link exactActiveClass="tab-active" role="tab" :to="{ name: 'group.metadata', params: { groupId } }" class="seg-tab">{{ t('media.view.tabs.metadata') }}</router-link>
+          <router-link exactActiveClass="tab-active" role="tab" :to="{ name: 'group.logs', params: { groupId } }" class="seg-tab">{{ t('media.view.tabs.logs') }}</router-link>
         </div>
       </template>
     </base-sub-nav>
@@ -15,6 +15,7 @@
 </template>
 
 <script setup lang="ts">
+import { ArrowDownTrayIcon, PlayIcon } from '@heroicons/vue/24/outline';
 
 import { useMediaStore } from '../../stores/media/media';
 import { useRouter } from 'vue-router';

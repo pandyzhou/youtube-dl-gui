@@ -1,12 +1,5 @@
 <template>
-  <div class="card-body py-0 pr-0 grow w-full overflow-hidden">
-    <h2
-        :title="group.title ?? group.url"
-        class="card-title block leading-8 overflow-hidden whitespace-nowrap overflow-ellipsis text-base"
-    >
-      {{ group.title ?? group.url }}
-    </h2>
-
+  <div class="flex min-w-0 flex-col gap-2">
     <base-progress
         :id="`${group.id}-progress`"
         :max="100"
@@ -22,16 +15,19 @@
       }}
     </base-progress>
 
-    <div class="w-full flex gap-4">
-      <p>
-        {{ t('media.steps.paused.metadata.etaItems', { n: remainingItems }) }}
-      </p>
+    <div class="flex min-w-0 flex-wrap items-center gap-x-4 gap-y-2 text-sm text-base-content/70">
+      <span>{{ t('media.steps.paused.metadata.etaItems', { n: remainingItems }) }}</span>
+      <button type="button" class="btn btn-primary btn-sm ml-auto gap-1.5" @click="emit('resume')">
+        <play-icon class="size-4" aria-hidden="true" />
+        {{ t('common.resume') }}
+      </button>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import { computed, PropType } from 'vue';
+import { PlayIcon } from '@heroicons/vue/24/solid';
 import { useMediaProgressStore } from '../../../stores/media/progress';
 import BaseProgress from '../../base/BaseProgress.vue';
 import { computeGroupPercentage } from '../../../helpers/progress';
@@ -45,6 +41,10 @@ const { group } = defineProps({
     required: true,
   },
 });
+
+const emit = defineEmits<{
+  (e: 'resume'): void;
+}>();
 
 const store = useMediaProgressStore();
 const progress = computed(() => store.findGroupProgress(group.id));

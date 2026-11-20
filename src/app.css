@@ -4,100 +4,188 @@
     exclude: properties;
 }
 
+/*
+ * System fonts only: the CSP blocks remote fonts and the app must work offline.
+ * Latin text uses Segoe UI, Chinese falls through to Microsoft YaHei UI.
+ */
+@theme {
+    --font-sans: "Segoe UI Variable Text", "Segoe UI", "Microsoft YaHei UI", "Microsoft YaHei", "PingFang SC", "Hiragino Sans GB", "Noto Sans CJK SC", system-ui, sans-serif;
+    --font-mono: "Cascadia Mono", "Cascadia Code", Consolas, "Microsoft YaHei UI", monospace;
+}
+
+/*
+ * Surfaces: base-200 is the page, base-100 the cards on it, base-300 the
+ * sidebar. --ovd-field is the background of inputs, so they read as
+ * recessed inside cards. --ovd-line is used for dividers and card borders.
+ */
 @plugin "daisyui/theme" {
     name: light;
     default: true;
     prefersdark: false;
+    color-scheme: light;
 
-    /* Surfaces */
-    --color-base-100: oklch(99.4% 0 0); /* cards / panels */
-    --color-base-200: oklch(98% 0 0); /* main page */
-    --color-base-300: oklch(95% 0 0); /* header / footer */
-    --color-base-content: oklch(28% 0.02 260); /* text */
+    --color-base-100: #ffffff;
+    --color-base-200: #f1f5f9;
+    --color-base-300: #e7ecf3;
+    --color-base-content: #0f172a;
 
-    /* Brand */
-    --color-primary: oklch(70% 0.16 150);
-    --color-primary-content: oklch(100% 0 0);
+    --color-primary: #15803d;
+    --color-primary-content: #ffffff;
+    --color-secondary: #4f46e5;
+    --color-secondary-content: #ffffff;
+    --color-accent: #0e7490;
+    --color-accent-content: #ffffff;
+    --color-neutral: #1e293b;
+    --color-neutral-content: #f8fafc;
 
-    /* Secondary */
-    --color-secondary: oklch(72% 0.12 170);
-    --color-secondary-content: oklch(14% 0.03 170);
+    --color-info: #0369a1;
+    --color-info-content: #ffffff;
+    --color-success: #15803d;
+    --color-success-content: #ffffff;
+    --color-warning: #b45309;
+    --color-warning-content: #ffffff;
+    --color-error: #b91c1c;
+    --color-error-content: #ffffff;
 
-    /* Accent */
-    --color-accent: oklch(74% 0.11 185);
-    --color-accent-content: oklch(15% 0.03 185);
-
-    /* Neutral */
-    --color-neutral: oklch(92% 0.008 260);
-    --color-neutral-content: oklch(28% 0.02 260);
-
-    /* Status colors */
-    --color-info:    oklch(68% 0.18 230);
-    --color-info-content: oklch(0% 0 0);
-    --color-success: oklch(67% 0.17 150);
-    --color-success-content: oklch(0% 0 0);
-    --color-warning: oklch(83% 0.18 83);
-    --color-warning-content: oklch(0% 0 0);
-    --color-error:   oklch(69% 0.21 22);
-    --color-error-content: oklch(0% 0 0);
-
-    /* Shape & depth */
     --radius-selector: 1rem;
-    --radius-field: 2rem;
-    --radius-box: 1rem;
+    --radius-field: 0.5rem;
+    --radius-box: 0.75rem;
     --size-selector: 0.25rem;
     --size-field: 0.25rem;
     --border: 1px;
     --depth: 0;
     --noise: 0;
-}
 
+    --ovd-field: #ffffff;
+    --ovd-line: #e2e8f0;
+}
 
 @plugin "daisyui/theme" {
     name: dark;
     prefersdark: true;
+    color-scheme: dark;
 
-    /* Surfaces */
-    --color-base-100: oklch(26.84% 0.008 17.911); /* cards / panels */
-    --color-base-200: oklch(25.522% 0.007 17.911); /* main background */
-    --color-base-300: oklch(19.203% 0.007 17.911); /* header / footer */
-    --color-base-content: oklch(83.768% 0.001 17.911); /* text */
+    --color-base-100: #172033;
+    --color-base-200: #0f172a;
+    --color-base-300: #0b1220;
+    --color-base-content: #e2e8f0;
 
-    /* Brand */
-    --color-primary: oklch(68.628% 0.185 148.958);
-    --color-primary-content: oklch(100% 0 0);
+    --color-primary: #22c55e;
+    --color-primary-content: #052e16;
+    --color-secondary: #818cf8;
+    --color-secondary-content: #1e1b4b;
+    --color-accent: #22d3ee;
+    --color-accent-content: #083344;
+    --color-neutral: #334155;
+    --color-neutral-content: #f1f5f9;
 
-    /* Secondary */
-    --color-secondary: oklch(69.776% 0.135 168.327);
-    --color-secondary-content: oklch(13.955% 0.027 168.327);
+    --color-info: #38bdf8;
+    --color-info-content: #082f49;
+    --color-success: #22c55e;
+    --color-success-content: #052e16;
+    --color-warning: #fbbf24;
+    --color-warning-content: #451a03;
+    --color-error: #f87171;
+    --color-error-content: #450a0a;
 
-    /* Accent */
-    --color-accent: oklch(70.628% 0.119 185.713);
-    --color-accent-content: oklch(14.125% 0.023 185.713);
-
-    /* Neutral */
-    --color-neutral: oklch(30.698% 0.039 171.364);
-    --color-neutral-content: oklch(86.139% 0.007 171.364);
-
-    /* Status colors */
-    --color-info: oklch(72.06% 0.191 231.6);
-    --color-info-content: oklch(0% 0 0);
-    --color-success: oklch(68.628% 0.185 148.958);
-    --color-success-content: oklch(100% 0 0);
-    --color-warning: oklch(84.71% 0.199 83.87);
-    --color-warning-content: oklch(0% 0 0);
-    --color-error: oklch(71.76% 0.221 22.18);
-    --color-error-content: oklch(0% 0 0);
-
-    /* Shape & depth */
     --radius-selector: 1rem;
-    --radius-field: 2rem;
-    --radius-box: 1rem;
+    --radius-field: 0.5rem;
+    --radius-box: 0.75rem;
     --size-selector: 0.25rem;
     --size-field: 0.25rem;
     --border: 1px;
     --depth: 0;
     --noise: 0;
+
+    --ovd-field: #0f172a;
+    --ovd-line: #263247;
+}
+
+/* bg-field, border-line, divide-line, ... resolve per element, so they follow data-theme on <body>. */
+@theme inline {
+    --color-field: var(--ovd-field);
+    --color-line: var(--ovd-line);
+}
+
+/*
+ * Inputs sit on --ovd-field. :where() keeps this at zero specificity, so any
+ * bg-* utility on an element still wins, while it beats daisyUI's own rules,
+ * which live in nested sub-layers.
+ */
+@layer utilities {
+    :where(.input, .select, .textarea, .file-input) {
+        background-color: var(--ovd-field);
+    }
+
+    :where(.input, .select, .textarea, .file-input):where(:disabled, [disabled]) {
+        background-color: color-mix(in oklab, var(--ovd-field) 60%, var(--color-base-100));
+    }
+
+    /* Hints in settings cards wrap instead of running off the card. */
+    :where(.settings-body) :where(.label) {
+        white-space: normal;
+    }
+}
+
+/* Segmented tabs used by the settings and media pages (router-link based). */
+@layer components {
+    .seg-tabs {
+        display: inline-flex;
+        flex-wrap: wrap;
+        gap: 0.25rem;
+        padding: 0.25rem;
+        border-radius: var(--radius-field);
+        background-color: var(--color-base-100);
+        box-shadow: inset 0 0 0 1px var(--ovd-line);
+    }
+
+    .seg-tab {
+        display: inline-flex;
+        align-items: center;
+        height: 2rem;
+        padding-inline: 0.875rem;
+        border-radius: calc(var(--radius-field) - 0.125rem);
+        font-size: 0.875rem;
+        white-space: nowrap;
+        color: color-mix(in oklab, var(--color-base-content) 72%, transparent);
+        transition: background-color 0.15s ease, color 0.15s ease;
+    }
+
+    .seg-tab:hover {
+        color: var(--color-base-content);
+        background-color: color-mix(in oklab, var(--color-base-content) 6%, transparent);
+    }
+
+    .seg-tab.tab-active {
+        color: var(--color-primary);
+        background-color: color-mix(in oklab, var(--color-primary) 15%, transparent);
+        font-weight: 600;
+    }
+
+    .seg-tab:focus-visible {
+        outline: 2px solid var(--color-primary);
+        outline-offset: 1px;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        .seg-tab {
+            transition: none;
+        }
+    }
+}
+
+html,
+body {
+    background-color: var(--color-base-200);
+}
+
+body {
+    -webkit-font-smoothing: antialiased;
+}
+
+* {
+    scrollbar-width: thin;
+    scrollbar-color: color-mix(in oklab, var(--color-base-content) 28%, transparent) transparent;
 }
 
 ::-ms-reveal {

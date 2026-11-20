@@ -1,9 +1,7 @@
 <template>
-  <div class="flex flex-col">
+  <div class="flex flex-col gap-5">
     <SettingsOutput v-model="settings" />
-    <div class="divider my-0" />
     <SettingsPerformance v-model="settings" />
-    <div class="divider my-0" />
     <SettingsSponsorBlock v-model="settings" />
   </div>
 </template>

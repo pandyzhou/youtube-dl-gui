@@ -1,7 +1,6 @@
 <template>
-  <div class="flex flex-col">
+  <div class="flex flex-col gap-5">
     <SettingsSystem v-model="settings" />
-    <div class="divider my-0" />
     <SettingsUpdate v-model="settings" />
   </div>
 </template>

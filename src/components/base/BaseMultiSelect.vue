@@ -80,7 +80,7 @@
         <div v-show="isOpen" class="absolute left-0 right-0 top-14 z-50">
           <ul
               :id="listboxId"
-              class="flex flex-col bg-base-100 border border-base-200 shadow-xl w-full rounded-box overflow-auto"
+              class="flex flex-col bg-base-100 border border-line shadow-xl w-full rounded-box overflow-auto"
               :class="maxHeightClass"
               role="listbox"
               aria-multiselectable="true"
@@ -104,7 +104,7 @@
                   :aria-selected="isValueSelected(option.value) ? 'true' : 'false'"
                   :aria-disabled="option.disabled ? 'true' : 'false'"
                   :class="{
-                  'bg-base-200': optionIndex === activeOptionIndex,
+                  'bg-base-content/10': optionIndex === activeOptionIndex,
                   'opacity-50 pointer-events-none': option.disabled,
                 }"
                   @mouseenter="activeOptionIndex = optionIndex"

@@ -12,76 +12,32 @@
         </base-button>
       </template>
       <template #title>
-        <h1 class="self-center text-lg font-semibold">{{ t('subtitles.title') }}</h1>
+        <div class="min-w-0">
+          <h1 class="text-xl font-semibold">{{ t('layout.sidebar.subtitles') }}</h1>
+          <p class="text-sm text-base-content/60">{{ t('subtitles.pageSubtitle') }}</p>
+        </div>
       </template>
     </base-sub-nav>
 
-    <section class="flex flex-col px-8 py-4">
+    <section class="mx-auto flex w-full max-w-3xl flex-col gap-5 px-6 py-6">
       <base-fieldset
         :legend="t('subtitles.options.languages.legend')"
         :label="t('subtitles.options.languages.legendLabel')"
+        rows
       >
-        <div class="flex flex-col gap-4">
-          <div class="flex items-center gap-3">
-            <input
-              id="all-languages"
-              type="checkbox"
-              class="toggle toggle-primary"
-              :checked="isAllSelected"
-              @change="toggleAllLanguages"
-            />
-            <label class="text-sm text-base-content/70" for="all-languages">
-              {{ t('subtitles.options.languages.downloadAll') }}
-            </label>
-          </div>
+        <base-setting-row :label="t('subtitles.options.languages.downloadAll')" label-for="all-languages">
+          <input
+            id="all-languages"
+            type="checkbox"
+            class="toggle toggle-primary"
+            :checked="isAllSelected"
+            @change="toggleAllLanguages"
+          />
+        </base-setting-row>
 
-          <div class="w-full flex flex-col md:w-96">
-            <label class="label" for="languageSearch">
-              <span class="label-text mb-2 font-semibold">
-                {{ t('subtitles.options.languages.search') }}
-              </span>
-            </label>
-            <input
-              id="languageSearch"
-              v-model="languageQuery"
-              type="search"
-              class="input input-bordered"
-              :placeholder="t('subtitles.options.languages.searchPlaceholder')"
-            />
-          </div>
-
-          <ul class="max-h-72 overflow-y-auto rounded-lg border border-base-300">
-            <li
-              v-for="option in filteredLanguageOptions"
-              :key="option.code"
-              class="border-b border-base-300 last:border-b-0"
-            >
-              <label class="flex cursor-pointer items-center gap-3 px-4 py-2">
-                <input
-                  type="checkbox"
-                  class="checkbox checkbox-sm"
-                  :checked="isLanguageSelected(option.code)"
-                  :disabled="isAllSelected"
-                  @change="toggleLanguage(option.code)"
-                />
-                <span class="flex flex-col">
-                  <span class="font-medium">{{ option.englishName }}</span>
-                  <span
-                    v-if="option.nativeName && option.nativeName !== option.englishName"
-                    class="text-xs text-base-content/60"
-                  >
-                    {{ option.nativeName }}
-                  </span>
-                </span>
-              </label>
-            </li>
-            <li v-if="!filteredLanguageOptions.length" class="px-4 py-6 text-center text-sm text-base-content/60">
-              {{ t('subtitles.options.languages.noResult', { query: languageQuery }) }}
-            </li>
-          </ul>
-
-          <div class="flex flex-wrap items-center gap-2 text-sm">
-            <span class="font-semibold">{{ t('subtitles.options.languages.selected') }}</span>
+        <div class="flex flex-col gap-3 py-3.5 last:pb-0" :class="{ 'opacity-60': isAllSelected }">
+          <div class="flex flex-wrap items-center gap-2">
+            <span class="text-sm font-medium">{{ t('subtitles.options.languages.selected') }}</span>
             <template v-if="isAllSelected">
               <span class="badge badge-soft badge-info">
                 {{ t('subtitles.options.languages.allSelected') }}
@@ -97,137 +53,170 @@
               <span
                 v-for="label in selectedLanguageBadges"
                 :key="label"
-                class="badge badge-soft"
+                class="badge badge-soft badge-primary"
               >
                 {{ label }}
               </span>
             </template>
           </div>
+
+          <label class="input w-full">
+            <magnifying-glass-icon class="size-4 shrink-0 text-base-content/50" aria-hidden="true" />
+            <span class="sr-only">{{ t('subtitles.options.languages.search') }}</span>
+            <input
+              id="languageSearch"
+              v-model="languageQuery"
+              type="search"
+              class="grow"
+              :placeholder="t('subtitles.options.languages.searchPlaceholder')"
+            />
+          </label>
+
+          <ul class="max-h-64 overflow-y-auto rounded-lg border border-line bg-field">
+            <li
+              v-for="option in filteredLanguageOptions"
+              :key="option.code"
+              class="border-b border-line last:border-b-0"
+            >
+              <label class="flex cursor-pointer items-center gap-3 px-3 py-2 hover:bg-base-content/5">
+                <input
+                  type="checkbox"
+                  class="checkbox checkbox-sm checkbox-primary"
+                  :checked="isLanguageSelected(option.code)"
+                  :disabled="isAllSelected"
+                  @change="toggleLanguage(option.code)"
+                />
+                <span class="flex min-w-0 flex-col">
+                  <span class="text-sm">{{ option.englishName }}</span>
+                  <span
+                    v-if="option.nativeName && option.nativeName !== option.englishName"
+                    class="text-xs text-base-content/60"
+                  >
+                    {{ option.nativeName }}
+                  </span>
+                </span>
+              </label>
+            </li>
+            <li v-if="!filteredLanguageOptions.length" class="px-4 py-6 text-center text-sm text-base-content/60">
+              {{ t('subtitles.options.languages.noResult', { query: languageQuery }) }}
+            </li>
+          </ul>
         </div>
       </base-fieldset>
-
-      <div class="divider my-0" />
 
       <base-fieldset
         :legend="t('subtitles.options.format.label')"
         :label="t('subtitles.options.format.legendLabel')"
+        rows
       >
-        <div class="grid gap-4 md:grid-cols-2">
-          <div class="flex flex-col gap-1">
-            <label class="font-semibold" for="format-select">
-              {{ t('subtitles.options.format.label') }}
-            </label>
-            <select
-              id="format-select"
-              v-model="primaryFormat"
-              class="select select-bordered w-full max-w-xs"
+        <base-setting-row :label="t('subtitles.options.format.label')" label-for="format-select">
+          <select
+            id="format-select"
+            v-model="primaryFormat"
+            class="select w-56"
+          >
+            <option
+              v-for="format in subtitleFormatOptions"
+              :key="format.value"
+              :value="format.value"
             >
-              <option
-                v-for="format in subtitleFormatOptions"
-                :key="format.value"
-                :value="format.value"
-              >
-                {{ format.label }}
-              </option>
-            </select>
-          </div>
-
-          <div class="flex flex-col gap-1">
-            <label class="font-semibold" for="embed-subtitles">
-              {{ t('subtitles.options.embed.label') }}
-            </label>
-            <input
-              id="embed-subtitles"
-              v-model="subtitleSettings.embedSubtitles"
-              type="checkbox"
-              class="toggle toggle-primary my-1"
-            />
-            <p class="label">
-              {{ t('subtitles.options.embed.hint') }}
-            </p>
-          </div>
-        </div>
+              {{ format.label }}
+            </option>
+          </select>
+        </base-setting-row>
+        <base-setting-row
+          :label="t('subtitles.options.embed.label')"
+          :hint="t('subtitles.options.embed.hint')"
+          label-for="embed-subtitles"
+        >
+          <input
+            id="embed-subtitles"
+            v-model="subtitleSettings.embedSubtitles"
+            type="checkbox"
+            class="toggle toggle-primary"
+          />
+        </base-setting-row>
       </base-fieldset>
-
-      <div class="divider my-0" />
 
       <base-fieldset
         :legend="t('subtitles.translation.legend')"
         :label="t('subtitles.translation.legendLabel')"
+        rows
       >
-        <div class="flex flex-col gap-1">
-          <label class="font-semibold" for="translation-enabled">
-            {{ t('subtitles.translation.enable.label') }}
-          </label>
+        <base-setting-row
+          :label="t('subtitles.translation.enable.label')"
+          :hint="t('subtitles.translation.enable.hint')"
+          label-for="translation-enabled"
+        >
           <input
             id="translation-enabled"
             v-model="translationSettings.enabled"
             type="checkbox"
-            class="toggle toggle-primary my-1"
+            class="toggle toggle-primary"
           />
-          <p class="label whitespace-normal">
-            {{ t('subtitles.translation.enable.hint') }}
-          </p>
-        </div>
+        </base-setting-row>
 
-        <div class="flex flex-col gap-4 mt-2 max-w-2xl">
-          <div class="flex flex-col gap-1">
-            <label class="font-semibold" for="translation-base-url">
+        <div class="grid grid-cols-1 gap-4 py-4 last:pb-0 sm:grid-cols-2">
+          <div class="flex flex-col gap-1.5 sm:col-span-2">
+            <label class="text-sm font-medium" for="translation-base-url">
               {{ t('subtitles.translation.baseUrl.label') }}
             </label>
             <input
               id="translation-base-url"
               v-model.trim="translationSettings.baseUrl"
               type="url"
-              class="input input-bordered w-full"
+              class="input w-full"
               :placeholder="t('subtitles.translation.baseUrl.placeholder')"
               autocomplete="off"
               spellcheck="false"
             />
-            <p class="label whitespace-normal">
+            <p class="text-xs leading-5 text-base-content/60">
               {{ t('subtitles.translation.baseUrl.hint') }}
             </p>
           </div>
 
-          <div class="flex flex-col gap-1">
-            <label class="font-semibold" for="translation-model">
+          <div class="flex flex-col gap-1.5">
+            <label class="text-sm font-medium" for="translation-model">
               {{ t('subtitles.translation.model.label') }}
             </label>
             <input
               id="translation-model"
               v-model.trim="translationSettings.model"
               type="text"
-              class="input input-bordered w-full"
+              class="input w-full"
               :placeholder="t('subtitles.translation.model.placeholder')"
               autocomplete="off"
               spellcheck="false"
             />
           </div>
 
-          <div class="flex flex-col gap-1">
-            <label class="font-semibold" for="translation-target">
+          <div class="flex flex-col gap-1.5">
+            <label class="text-sm font-medium" for="translation-target">
               {{ t('subtitles.translation.target.label') }}
             </label>
             <input
               id="translation-target"
               v-model.trim="translationSettings.targetLanguage"
               type="text"
-              class="input input-bordered w-full"
+              class="input w-full"
               autocomplete="off"
             />
           </div>
 
-          <credentials-init v-if="!strongholdStore.status.unlocked" />
-          <div v-else class="flex flex-col gap-1">
-            <base-secret-input
-              id="translation-api-key"
-              v-model="apiKey"
-              :password="true"
-              :label="t('subtitles.translation.apiKey.label')"
-            />
-            <p class="label whitespace-normal">
-              {{ t('subtitles.translation.apiKey.hint') }}
-            </p>
+          <div class="flex flex-col gap-1.5 sm:col-span-2">
+            <credentials-init v-if="!strongholdStore.status.unlocked" />
+            <template v-else>
+              <base-secret-input
+                id="translation-api-key"
+                v-model="apiKey"
+                :password="true"
+                :label="t('subtitles.translation.apiKey.label')"
+              />
+              <p class="flex items-center gap-1.5 text-xs leading-5 text-base-content/60">
+                <lock-closed-icon class="size-3.5 shrink-0" aria-hidden="true" />
+                {{ t('subtitles.translation.apiKey.hint') }}
+              </p>
+            </template>
           </div>
         </div>
       </base-fieldset>
@@ -240,6 +229,8 @@ import { computed, ref, watch } from 'vue';
 import BaseButton from '../../components/base/BaseButton.vue';
 import BaseFieldset from '../../components/base/BaseFieldset.vue';
 import BaseSubNav from '../../components/base/BaseSubNav.vue';
+import BaseSettingRow from '../../components/base/BaseSettingRow.vue';
+import { LockClosedIcon, MagnifyingGlassIcon } from '@heroicons/vue/24/outline';
 import {
   languageOptions,
   getSubtitleLanguageLabel,

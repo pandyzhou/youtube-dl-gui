@@ -1,27 +1,32 @@
 <template>
-  <article class="card card-side w-full max-w-175 h-48 bg-base-300 p-4 shadow-md" :class="[statusOutline]">
-    <figure class="shrink-0 w-64 aspect-video rounded-md overflow-hidden bg-base-100">
+  <article
+      class="card min-w-0 flex-row gap-4 border bg-base-100 p-3 transition-colors duration-150"
+      :class="statusBorder"
+  >
+    <figure class="relative aspect-video w-40 shrink-0 self-start overflow-hidden rounded-lg bg-base-300">
       <img
           :src="group.thumbnail ?? placeholderUrl"
           :alt="t('media.view.thumbnailAlt', { title: group.title ?? '' })"
-          class="object-cover w-full h-full"
+          class="h-full w-full object-cover"
+          loading="lazy"
           @error="setPlaceholderImage"
       />
     </figure>
-    <component
-        :is="activeStep"
-        v-if="activeStep"
-        v-bind="activeStepProps"
-    />
-    <div class="divider divider-horizontal"></div>
-    <media-card-actions
-        @download="downloadGroup"
-        @retry="retryGroup"
-        @remove="removeGroup"
-        @pause="pauseGroup"
-        @resume="downloadGroup"
-        :group="group"
-    />
+    <div class="flex min-w-0 flex-1 flex-col gap-2">
+      <div class="flex min-w-0 items-start gap-2">
+        <h2 :title="title" class="min-w-0 flex-1 truncate text-[15px] leading-8 font-semibold">{{ title }}</h2>
+        <media-card-actions :group="group" @remove="removeGroup" />
+      </div>
+      <component
+          :is="activeStep"
+          v-if="activeStep"
+          v-bind="activeStepProps"
+          @download="downloadGroup"
+          @pause="pauseGroup"
+          @resume="downloadGroup"
+          @retry="retryGroup"
+      />
+    </div>
   </article>
 </template>
 
@@ -79,6 +84,8 @@ const activeStep = computed(() => stepMap[groupState.value ?? MediaState.fetchin
 
 const activeStepProps = computed(() => ({ group }));
 
+const title = computed(() => group.title ?? group.url);
+
 const downloadGroup = (): void => {
   const options = optionsStore.getOptions(group.id);
   if (!options) {
@@ -117,15 +124,15 @@ const setPlaceholderImage = (event: Event): void => {
   }
 };
 
-const statusOutline = computed(() => {
+const statusBorder = computed(() => {
   switch (groupState.value) {
     case MediaState.error:
-      return 'border border-error';
+      return 'border-error/50';
     case MediaState.paused:
     case MediaState.pausedList:
-      return 'border border-warning';
+      return 'border-warning/50';
     default:
-      return '';
+      return 'border-line';
   }
 });
 

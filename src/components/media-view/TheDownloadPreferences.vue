@@ -1,11 +1,11 @@
 <template>
-  <section v-if="group" class="flex flex-col gap-4 py-4 px-8">
+  <section v-if="group" class="mx-auto w-full max-w-4xl px-6 py-6 flex flex-col gap-5">
     <base-fieldset
       :legend="t('media.preferences.tabs.quality')"
       :label="t('media.preferences.labels.quality')"
     >
       <div class="flex flex-col gap-4 lg:flex-row lg:flex-wrap">
-        <article class="rounded-box bg-base-100 p-4 lg:min-w-0 lg:w-[calc(50%-0.5rem)] lg:shrink-0">
+        <article class="rounded-lg border border-line p-4 lg:min-w-0 lg:w-[calc(50%-0.5rem)] lg:shrink-0">
           <h3 class="font-semibold mb-1">{{ t('media.steps.configure.format.formatSelect.placeholder') }}</h3>
           <p class="label mb-3">{{ t('media.preferences.hints.format') }}</p>
           <media-download-options
@@ -17,7 +17,7 @@
           />
         </article>
 
-        <article class="rounded-box bg-base-100 p-4 lg:min-w-0 lg:w-[calc(50%-0.5rem)] lg:shrink-0">
+        <article class="rounded-lg border border-line p-4 lg:min-w-0 lg:w-[calc(50%-0.5rem)] lg:shrink-0">
           <h3 class="font-semibold mb-1">{{ t('settings.appearance.expandedOptions.options.encodings') }}</h3>
           <p class="label mb-3">{{ t('media.preferences.hints.encodings') }}</p>
           <media-encoding-options
@@ -30,7 +30,7 @@
           />
         </article>
 
-        <article class="rounded-box bg-base-100 p-4 lg:min-w-0 lg:w-[calc(50%-0.5rem)] lg:shrink-0">
+        <article class="rounded-lg border border-line p-4 lg:min-w-0 lg:w-[calc(50%-0.5rem)] lg:shrink-0">
           <h3 class="font-semibold mb-1">{{ t('settings.appearance.expandedOptions.options.tracks') }}</h3>
           <p class="label mb-3">{{ t('media.preferences.hints.tracks') }}</p>
           <media-track-options

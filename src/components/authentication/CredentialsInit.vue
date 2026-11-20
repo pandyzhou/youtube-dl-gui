@@ -1,5 +1,5 @@
 <template>
-  <div role="alert" data-testid="auth-init-alert" class="alert alert-soft alert-horizontal max-w-4xl" :class="{ 'alert-info': !hasError, 'alert-error': hasError }">
+  <div role="alert" data-testid="auth-init-alert" class="alert alert-soft alert-horizontal w-full" :class="{ 'alert-info': !hasError, 'alert-error': hasError }">
     <exclamation-circle-icon v-if="hasError" class="w-6 h-6"/>
     <key-icon v-else class="w-6 h-6"/>
     <div>

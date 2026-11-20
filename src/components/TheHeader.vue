@@ -1,5 +1,5 @@
 <template>
-  <header class="relative z-20 p-4 bg-base-300 flex gap-4 justify-center w-full shadow-lg">
+  <header class="relative z-10 border-b border-line bg-base-200 px-6 pt-5 pb-4">
     <input
         ref="fileInput"
         type="file"
@@ -7,72 +7,65 @@
         class="hidden"
         @change="handleFileSelection"
     />
-    <form @submit.prevent="handleSubmit" class="join w-full max-w-155 grow" autocomplete="off">
-      <input
-          v-model="url"
-          id="queue-url-input"
-          name="URL input to queue a video or playlist"
-          class="input join-item w-full"
-          :placeholder="inputPlaceholder"
-          type="text"
-          inputmode="url"
-          autocomplete="off"
-          autocorrect="off"
-          autocapitalize="off"
-          spellcheck="false"
-          ref="input"
-      />
-      <base-button-dropdown
-          btnClass="btn-primary"
-          placement="bottom"
-          align="end"
-          menuWidthClass="w-64"
-          flushLeft
-          :main-disabled="isInputDisabled"
-          :caretAriaLabel="t('layout.header.actions.more')"
-          @mainClick="handleAddClick"
+    <div class="mb-3 flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
+      <h1 class="text-xl font-semibold">{{ t('layout.header.title') }}</h1>
+      <p class="text-sm text-base-content/60">{{ t('layout.header.subtitle') }}</p>
+    </div>
+    <form @submit.prevent="handleSubmit" class="flex gap-2" autocomplete="off">
+      <label class="input h-11 min-w-0 flex-1 gap-2.5 text-[15px]">
+        <link-icon class="size-5 shrink-0 text-base-content/50" aria-hidden="true" />
+        <span class="sr-only">{{ t('layout.header.inputLabel') }}</span>
+        <input
+            v-model="url"
+            id="queue-url-input"
+            name="URL input to queue a video or playlist"
+            class="grow"
+            :placeholder="inputPlaceholder"
+            type="text"
+            inputmode="url"
+            autocomplete="off"
+            autocorrect="off"
+            autocapitalize="off"
+            spellcheck="false"
+            ref="input"
+        />
+      </label>
+      <button
+          type="button"
+          class="btn btn-primary h-11 gap-1.5 px-5 whitespace-nowrap"
+          :disabled="isInputDisabled"
+          @click="handleAddClick"
       >
-        <template #main>
-          {{ t('common.add') }}
-        </template>
-
-        <li>
-          <button
-              class="gap-2 text-nowrap"
-              :class="{ 'font-semibold text-primary': watchClipboardStore.isActive }"
-              type="button"
-              :aria-pressed="watchClipboardStore.isActive"
-              @click="watchClipboardStore.toggle()"
-          >
-            <clipboard-document-check-icon v-if="watchClipboardStore.isActive" class="w-4 h-4" />
-            <clipboard-document-list-icon v-else class="w-4 h-4" />
-            {{ t(watchClipboardStore.isActive ? 'layout.header.actions.watchClipboardStop' : 'layout.header.actions.watchClipboardStart') }}
-          </button>
-        </li>
-        <li>
-          <button class="gap-2 text-nowrap" type="button" @click="handleImportClick">
-            <document-arrow-up-icon class="w-4 h-4" />
-            {{ t('layout.header.actions.importFile') }}
-          </button>
-        </li>
-        <li>
-          <button
-            class="gap-2 text-nowrap"
-            :class="{ 'font-semibold text-primary': hasActiveInputFilters }"
-            type="button"
-            @click="openInputFilters"
-          >
-            <funnel-icon v-if="!hasActiveInputFilters" class="w-4 h-4" />
-            <funnel-icon-solid v-else class="w-4 h-4" />
-            {{ t('layout.header.actions.inputFilters') }}
-          </button>
-        </li>
-      </base-button-dropdown>
+        <plus-icon class="size-5" aria-hidden="true" />
+        {{ t('common.add') }}
+      </button>
     </form>
-    <router-link class="btn btn-subtle" :title="t('layout.header.nav.settings')" :to="{ name: 'settings.downloads' }">
-      <span class="sr-only">{{ t('layout.header.nav.settings') }}</span>
-      <cog8-tooth-icon class="w-6 h-6"/>
-    </router-link>
+    <div class="mt-3 flex flex-wrap gap-2">
+      <button
+          type="button"
+          :class="chipClass(watchClipboardStore.isActive)"
+          :aria-pressed="watchClipboardStore.isActive"
+          @click="watchClipboardStore.toggle()"
+      >
+        <clipboard-document-check-icon v-if="watchClipboardStore.isActive" class="size-4" aria-hidden="true" />
+        <clipboard-document-list-icon v-else class="size-4" aria-hidden="true" />
+        {{ t('layout.header.actions.watchClipboardStart') }}
+      </button>
+      <button type="button" :class="chipClass(false)" @click="handleImportClick">
+        <document-arrow-up-icon class="size-4" aria-hidden="true" />
+        {{ t('layout.header.actions.importFile') }}
+      </button>
+      <button
+          type="button"
+          :class="chipClass(hasActiveInputFilters)"
+          @click="openInputFilters"
+      >
+        <funnel-icon-solid v-if="hasActiveInputFilters" class="size-4" aria-hidden="true" />
+        <funnel-icon v-else class="size-4" aria-hidden="true" />
+        {{ t('layout.header.actions.inputFilters') }}
+        <span v-if="hasActiveInputFilters" class="text-xs opacity-80">{{ t('layout.header.actions.filtersOn') }}</span>
+      </button>
+    </div>
   </header>
 </template>
 
@@ -81,9 +74,10 @@
 import {
   ClipboardDocumentCheckIcon,
   ClipboardDocumentListIcon,
-  Cog8ToothIcon,
   DocumentArrowUpIcon,
   FunnelIcon,
+  LinkIcon,
+  PlusIcon,
 } from '@heroicons/vue/24/outline';
 import { FunnelIcon as FunnelIconSolid } from '@heroicons/vue/24/solid';
 import { useMediaStore } from '../stores/media/media';
@@ -93,7 +87,6 @@ import { useRouter } from 'vue-router';
 import { useI18n } from 'vue-i18n';
 import { useSettingsStore } from '../stores/settings';
 import { isValidUrl } from '../helpers/url.ts';
-import BaseButtonDropdown from './base/BaseButtonDropdown.vue';
 import { useWatchClipboardStore } from '../stores/watchClipboard.ts';
 import { useToastStore } from '../stores/toast.ts';
 import {
@@ -143,6 +136,15 @@ const isInputDisabled = computed(() => {
 });
 
 const url = ref('');
+
+function chipClass(active: boolean): string[] {
+  return [
+    'btn btn-sm h-8 gap-1.5 rounded-full px-3 font-normal shadow-none whitespace-nowrap',
+    active
+      ? 'border-primary/60 bg-primary/10 text-primary'
+      : 'btn-ghost border-line text-base-content/75 hover:text-base-content',
+  ];
+}
 
 async function addClipboardUrlToQueue(urlToRecord: string) {
   if (!watchClipboardStore.isActive || !isValidUrl(urlToRecord) || watchClipboardStore.hasSeen(urlToRecord)) {

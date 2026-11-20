@@ -1,6 +1,24 @@
 <template>
-  <button :disabled="disabled" v-if="!to" :title="label" class="btn btn-xs border-none shadow-none bg-transparent disabled:bg-transparent btn-circle hover:opacity-75 transition-opacity"><span class="sr-only">{{ label }}</span><component :is="icon"/></button>
-  <router-link :disabled="disabled ? true : undefined" v-else :title="label" :to="to" class="btn btn-xs border-none shadow-none bg-transparent btn-circle hover:opacity-75 transition-opacity"><span class="sr-only">{{ label }}</span><component :is="icon"/></router-link>
+  <button
+      v-if="!to"
+      type="button"
+      :disabled="disabled"
+      :title="label"
+      class="btn btn-ghost btn-square btn-sm text-base-content/60 hover:text-base-content disabled:bg-transparent"
+  >
+    <span class="sr-only">{{ label }}</span>
+    <component :is="icon" class="size-[18px]" aria-hidden="true"/>
+  </button>
+  <router-link
+      v-else
+      :disabled="disabled ? true : undefined"
+      :title="label"
+      :to="to"
+      class="btn btn-ghost btn-square btn-sm text-base-content/60 hover:text-base-content"
+  >
+    <span class="sr-only">{{ label }}</span>
+    <component :is="icon" class="size-[18px]" aria-hidden="true"/>
+  </router-link>
 </template>
 <script setup lang="ts">
 import { type FunctionalComponent, type HTMLAttributes, PropType, type VNodeProps } from 'vue';
@@ -26,9 +44,3 @@ const { icon, label, to } = defineProps({
   },
 });
 </script>
-
-<style scoped>
-.btn:disabled {
-  background: transparent !important;
-}
-</style>

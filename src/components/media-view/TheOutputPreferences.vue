@@ -1,6 +1,6 @@
 <template>
-  <form class="px-8 py-4">
-    <div class="flex max-w-4xl flex-col gap-4">
+  <form class="mx-auto w-full max-w-4xl px-6 py-6">
+    <div class="flex flex-col gap-5">
       <base-fieldset
         :legend="t('settings.output.legend')"
         :badge="t('media.preferences.badges.override')"
@@ -76,9 +76,9 @@
                 {{ t('location.filename.formatPreset.restrictFilenames.hint') }}
               </p>
             </div>
-            <div class="divider mt-4 mb-1" />
             <base-fieldset
-              class="max-w-xl"
+              class="mt-4 max-w-xl"
+              flat
               :legend="t('settings.output.partialDownload.legend')"
               :label="t('settings.output.partialDownload.hint')"
             >

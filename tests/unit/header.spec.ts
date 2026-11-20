@@ -1,4 +1,4 @@
-import { mount, RouterLinkStub } from '@vue/test-utils';
+import { mount } from '@vue/test-utils';
 import { createMemoryHistory, createRouter } from 'vue-router';
 import { defineComponent, reactive, ref, nextTick } from 'vue';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -110,22 +110,6 @@ describe('TheHeader', () => {
     await router.isReady();
     return router;
   }
-
-  it('navigates the settings button to the downloads tab route', async () => {
-    const router = await createRouterForHeader();
-
-    const wrapper = mount(TheHeader, {
-      global: {
-        plugins: [router, i18n],
-        stubs: {
-          RouterLink: RouterLinkStub,
-        },
-      },
-    });
-
-    const links = wrapper.findAllComponents(RouterLinkStub).map(link => link.props('to'));
-    expect(links).toContainEqual({ name: 'settings.downloads' });
-  });
 
   it('queues parsed urls from the input field', async () => {
     const router = await createRouterForHeader();

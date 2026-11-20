@@ -1,12 +1,5 @@
 <template>
-  <div class="card-body py-0 pr-0 grow w-full overflow-hidden">
-    <h2
-        :title="group.title ?? group.url"
-        class="card-title block leading-8 overflow-hidden whitespace-nowrap overflow-ellipsis text-base"
-    >
-      {{ group.title ?? group.url }}
-    </h2>
-
+  <div class="flex min-w-0 flex-col gap-2">
     <base-progress
         :id="`${group.id}-progress`"
         :max="100"
@@ -21,16 +14,19 @@
       }}
     </base-progress>
 
-    <div class="w-full flex gap-4">
-      <p>
-        {{ t('media.steps.download.metadata.speed', { speed: speedDisplay }) }}
-      </p>
+    <div class="flex min-w-0 flex-wrap items-center gap-x-4 gap-y-2 text-sm text-base-content/70">
+      <span class="tabular-nums">{{ t('media.steps.download.metadata.speed', { speed: speedDisplay }) }}</span>
+      <button type="button" class="btn btn-soft btn-sm ml-auto gap-1.5" @click="emit('pause')">
+        <pause-icon class="size-4" aria-hidden="true" />
+        {{ t('common.pause') }}
+      </button>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import { computed, PropType } from 'vue';
+import { PauseIcon } from '@heroicons/vue/24/solid';
 import { useMediaProgressStore } from '../../../stores/media/progress';
 import BaseProgress from '../../base/BaseProgress.vue';
 import { computeGroupPercentage } from '../../../helpers/progress';
@@ -45,6 +41,10 @@ const { group } = defineProps({
     required: true,
   },
 });
+
+const emit = defineEmits<{
+  (e: 'pause'): void;
+}>();
 
 const store = useMediaProgressStore();
 const progress = computed(() => store.findGroupProgress(group.id));

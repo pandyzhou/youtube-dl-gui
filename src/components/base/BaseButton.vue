@@ -1,12 +1,11 @@
 <template>
-  <div :class="{ tooltip: !disabled && tooltip, [tooltipLocationClass]: true }" class="border-base-300" :data-tip="tooltip">
+  <div :class="{ tooltip: !disabled && tooltip, [tooltipLocationClass]: true }" :data-tip="tooltip">
     <router-link
         v-if="to"
         :to="to"
-        class="btn btn-subtle"
+        class="btn"
         v-bind="$attrs"
         :disabled="disabled ? true : undefined"
-        activeClass="border-primary"
     >
       <slot v-if="loading" name="loader">
         <span class="sr-only">{{ t('common.loading') }}</span>
@@ -14,7 +13,7 @@
       </slot>
       <slot v-else />
     </router-link>
-    <button v-else @click="emit('click', $event)" v-bind="$attrs" class="btn btn-subtle" :disabled="disabled ? true : undefined">
+    <button v-else @click="emit('click', $event)" v-bind="$attrs" class="btn" :disabled="disabled ? true : undefined">
       <slot v-if="loading" name="loader">
         <span class="sr-only">{{ t('common.loading') }}</span>
         <span class="loading loading-spinner loading-sm"></span>

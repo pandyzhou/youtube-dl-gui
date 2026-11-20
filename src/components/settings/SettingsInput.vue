@@ -2,87 +2,63 @@
   <base-fieldset
       :legend="t('settings.input.legend')"
       :label="t('settings.input.legendLabel')"
+      rows
   >
-    <label class="font-semibold mt-2" for="autoFillClipboard">
-      {{ t('settings.input.autoFillClipboard.label') }}
-    </label>
-    <input
-        id="autoFillClipboard"
-        type="checkbox"
-        v-model="settings.input.autoFillClipboard"
-        class="toggle toggle-primary"
-    />
-    <p class="label">{{ t('settings.input.autoFillClipboard.hint') }}</p>
-    <label class="font-semibold mt-2" for="preferVideoInMixedLinks">
-      {{ t('settings.input.preferVideoInMixedLinks.label') }}
-    </label>
-    <input
-        id="preferVideoInMixedLinks"
-        type="checkbox"
-        v-model="settings.input.preferVideoInMixedLinks"
-        class="toggle toggle-primary"
-    />
-    <p class="label">{{ t('settings.input.preferVideoInMixedLinks.hint') }}</p>
-    <p class="font-semibold mt-2">
-      {{ t('settings.input.authentication.label') }}
-    </p>
-    <router-link class="text-primary group font-semibold flex gap-1 items-center" :to="{ name: 'authentication' }">
-      {{ t('settings.input.authentication.link') }}
-      <arrow-right-icon class="w-5 h-5 group-focus:translate-x-1 group-hover:translate-x-1 transition-transform"/>
-    </router-link>
-    <section class="bg-base-100 flex justify-between w-full p-4 mt-2 rounded-box">
-      <div class="flex flex-col gap-2">
-        <label class="font-semibold" for="globalShortcuts">
-          {{ t('settings.input.globalShortcuts.label') }}
-        </label>
-        <input
-            id="globalShortcuts"
-            type="checkbox"
-            v-model="settings.input.globalShortcuts"
-            class="toggle toggle-primary"
-        />
-      </div>
-      <div class="flex flex-col justify-end" :class="{ 'opacity-70': settings.input.globalShortcuts === false }">
-        <p class="label">
-          {{ t('settings.input.globalShortcuts.add_hint') }}
-          <template v-if="isMac">
-            <!-- eslint-disable-next-line @intlify/vue-i18n/no-raw-text -->
-            <kbd class="kbd">ctrl</kbd>+<kbd class="kbd">shift</kbd>+<kbd class="kbd">V</kbd>
-          </template>
-          <template v-else>
-            <!-- eslint-disable-next-line @intlify/vue-i18n/no-raw-text -->
-            <kbd class="kbd">alt</kbd>+<kbd class="kbd">shift</kbd>+<kbd class="kbd">V</kbd>
-          </template>
-        </p>
-        <p class="label">
-          {{ t('settings.input.globalShortcuts.download_hint') }}
-          <template v-if="isMac">
-            <!-- eslint-disable-next-line @intlify/vue-i18n/no-raw-text -->
-            <kbd class="kbd">ctrl</kbd>+<kbd class="kbd">shift</kbd>+<kbd class="kbd">Enter</kbd>
-          </template>
-          <template v-else>
-            <!-- eslint-disable-next-line @intlify/vue-i18n/no-raw-text -->
-            <kbd class="kbd">alt</kbd>+<kbd class="kbd">shift</kbd>+<kbd class="kbd">Enter</kbd>
-          </template>
-        </p>
-        <p class="label">
-          {{ t('settings.input.globalShortcuts.instant_hint') }}
-          <template v-if="isMac">
-            <!-- eslint-disable-next-line @intlify/vue-i18n/no-raw-text -->
-            <kbd class="kbd">ctrl</kbd>+<kbd class="kbd">shift</kbd>+<kbd class="kbd">D</kbd>
-          </template>
-          <template v-else>
-            <!-- eslint-disable-next-line @intlify/vue-i18n/no-raw-text -->
-            <kbd class="kbd">alt</kbd>+<kbd class="kbd">shift</kbd>+<kbd class="kbd">D</kbd>
-          </template>
-        </p>
-      </div>
-    </section>
+    <base-setting-row
+        :label="t('settings.input.autoFillClipboard.label')"
+        :hint="t('settings.input.autoFillClipboard.hint')"
+        label-for="autoFillClipboard"
+    >
+      <input
+          id="autoFillClipboard"
+          type="checkbox"
+          v-model="settings.input.autoFillClipboard"
+          class="toggle toggle-primary"
+      />
+    </base-setting-row>
+    <base-setting-row
+        :label="t('settings.input.preferVideoInMixedLinks.label')"
+        :hint="t('settings.input.preferVideoInMixedLinks.hint')"
+        label-for="preferVideoInMixedLinks"
+    >
+      <input
+          id="preferVideoInMixedLinks"
+          type="checkbox"
+          v-model="settings.input.preferVideoInMixedLinks"
+          class="toggle toggle-primary"
+      />
+    </base-setting-row>
+    <base-setting-row :label="t('settings.input.globalShortcuts.label')" label-for="globalShortcuts">
+      <template #hint>
+        <ul class="mt-1.5 flex flex-col gap-1 text-sm text-base-content/60" :class="{ 'opacity-60': settings.input.globalShortcuts === false }">
+          <li v-for="shortcut in shortcuts" :key="shortcut.hint" class="flex flex-wrap items-center gap-1.5">
+            {{ shortcut.hint }}
+            <span class="flex items-center gap-1">
+              <kbd v-for="key in shortcut.keys" :key="key" class="kbd kbd-sm">{{ key }}</kbd>
+            </span>
+          </li>
+        </ul>
+      </template>
+      <input
+          id="globalShortcuts"
+          type="checkbox"
+          v-model="settings.input.globalShortcuts"
+          class="toggle toggle-primary"
+      />
+    </base-setting-row>
+    <base-setting-row :label="t('settings.input.authentication.label')">
+      <router-link class="btn btn-soft btn-sm gap-1" :to="{ name: 'authentication' }">
+        {{ t('settings.input.authentication.link') }}
+        <chevron-right-icon class="size-4" aria-hidden="true"/>
+      </router-link>
+    </base-setting-row>
   </base-fieldset>
 </template>
 <script setup lang="ts">
-import { ArrowRightIcon } from '@heroicons/vue/24/solid';
+import { ChevronRightIcon } from '@heroicons/vue/24/outline';
+import { computed } from 'vue';
 import BaseFieldset from '../base/BaseFieldset.vue';
+import BaseSettingRow from '../base/BaseSettingRow.vue';
 import { Settings } from '../../tauri/types/config.ts';
 import { useI18n } from 'vue-i18n';
 import { usePlatform } from '../../composables/usePlatform.ts';
@@ -90,11 +66,13 @@ import { usePlatform } from '../../composables/usePlatform.ts';
 const { t } = useI18n();
 const { isMac } = usePlatform();
 const settings = defineModel<Settings>({ required: true });
-</script>
 
-<style scoped>
-.kbd {
-  border-radius: 4px;
-  background-color: var(--color-base-300);
-}
-</style>
+const shortcuts = computed(() => {
+  const modifier = isMac.value ? 'ctrl' : 'alt';
+  return [
+    { hint: t('settings.input.globalShortcuts.add_hint'), keys: [modifier, 'shift', 'V'] },
+    { hint: t('settings.input.globalShortcuts.download_hint'), keys: [modifier, 'shift', 'Enter'] },
+    { hint: t('settings.input.globalShortcuts.instant_hint'), keys: [modifier, 'shift', 'D'] },
+  ];
+});
+</script>

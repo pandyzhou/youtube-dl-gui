@@ -7,16 +7,16 @@
         </base-button>
       </template>
       <template v-slot:title>
-        <h1 class="text-lg font-semibold self-center">
-          {{ t('auth.title') }}
-        </h1>
+        <div class="min-w-0">
+          <h1 class="text-xl font-semibold">{{ t('layout.sidebar.authentication') }}</h1>
+          <p class="text-sm text-base-content/60">{{ t('auth.pageSubtitle') }}</p>
+        </div>
       </template>
     </base-sub-nav>
-    <div class="flex flex-col py-4 px-8">
+    <section class="mx-auto flex w-full max-w-3xl flex-col gap-5 px-6 py-6">
       <cookies-config v-model="cookieFields"/>
-      <div class="divider -mt-2 mb-4"/>
       <credentials-config v-model="strongholdFields"/>
-    </div>
+    </section>
   </form>
 </template>
 

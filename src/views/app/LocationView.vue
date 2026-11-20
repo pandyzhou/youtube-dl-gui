@@ -7,28 +7,31 @@
         </base-button>
       </template>
       <template v-slot:title>
-        <h1 class="text-lg font-semibold self-center">{{ t('location.title') }}</h1>
+        <div class="min-w-0">
+          <h1 class="text-xl font-semibold">{{ t('layout.sidebar.location') }}</h1>
+          <p class="text-sm text-base-content/60">{{ t('location.pageSubtitle') }}</p>
+        </div>
       </template>
     </base-sub-nav>
-    <section class="flex flex-col mt-2 py-4 px-8">
-      <base-file-input
-          class="max-w-4xl my-2"
-          v-model="settingsDraft.output.downloadDir"
-          :label="t('location.downloadDir.label')"
-          :recent-values="recentValues.downloadDir"
-          @clear-recents="clearRecents('downloadDir')"
-          :clearable="false"
-          show-recent
-          directory
-      />
-      <p class="label text-sm mb-4">{{ t('location.downloadDir.hint') }}</p>
-      <div class="divider my-2"/>
+    <section class="mx-auto flex w-full max-w-3xl flex-col gap-5 px-6 py-6">
+      <div class="flex flex-col gap-1.5 rounded-box border border-line bg-base-100 px-5 pt-4 pb-5 text-sm">
+        <base-file-input
+            class="w-full"
+            v-model="settingsDraft.output.downloadDir"
+            :label="t('location.downloadDir.label')"
+            :recent-values="recentValues.downloadDir"
+            @clear-recents="clearRecents('downloadDir')"
+            :clearable="false"
+            show-recent
+            directory
+        />
+        <p class="text-base-content/60">{{ t('location.downloadDir.hint') }}</p>
+      </div>
       <preferences-directory
           v-model="preferencesDraft"
           :recent-values="recentValues"
           @clear-recents="clearRecents"
       />
-      <div class="divider my-2"/>
       <preferences-filename v-model="settingsDraft"/>
     </section>
   </form>

@@ -1,6 +1,6 @@
 <template>
-  <form class="px-8 py-4">
-    <div class="flex max-w-4xl flex-col">
+  <form class="mx-auto w-full max-w-4xl px-6 py-6">
+    <div class="flex flex-col gap-5">
       <div
         v-if="!hasAnyAvailableLanguages"
         class="alert alert-soft"
@@ -28,7 +28,7 @@
             </div>
 
             <div class="grid gap-4 md:grid-cols-2">
-              <section class="rounded-lg border border-base-300">
+              <section class="rounded-lg border border-line">
                 <p class="border-b border-base-300 px-4 py-2 text-sm font-semibold">
                   {{ t('media.preferences.subtitles.languages.manual') }}
                 </p>
@@ -52,7 +52,7 @@
                 </p>
               </section>
 
-              <section class="rounded-lg border border-base-300">
+              <section class="rounded-lg border border-line">
                 <p class="border-b border-base-300 px-4 py-2 text-sm font-semibold">
                   {{ t('media.preferences.subtitles.languages.auto') }}
                 </p>
@@ -105,7 +105,6 @@
           </div>
         </base-fieldset>
 
-        <div class="divider my-0" />
       </template>
 
       <base-fieldset

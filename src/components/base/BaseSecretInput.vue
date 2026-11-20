@@ -1,7 +1,7 @@
 <template>
   <div class="w-full max-w-2xl">
-    <label :for="id" v-if="label" class="label mb-2">
-      <span class="font-semibold">{{ label }}</span>
+    <label :for="id" v-if="label" class="mb-1.5 block text-sm font-medium">
+      {{ label }}
     </label>
 
     <div class="join w-full">
@@ -17,24 +17,24 @@
       <button
           v-if="password"
           type="button"
-          class="btn join-item"
+          class="btn btn-soft join-item"
           @click="reveal = !reveal"
       >
         <span class="sr-only">
-          {{ reveal ? t('components.base.secretInput.hide') : t('components.base.secretInput.hide') }} {{ label }}
+          {{ reveal ? t('components.base.secretInput.hide') : t('components.base.secretInput.show') }} {{ label }}
         </span>
-        <eye-icon v-if="reveal" class="w-5 h-5"/>
-        <eye-slash-icon v-else class="w-5 h-5"/>
+        <eye-icon v-if="reveal" class="size-5" aria-hidden="true"/>
+        <eye-slash-icon v-else class="size-5" aria-hidden="true"/>
       </button>
       <button
           v-if="clearable"
           type="button"
-          class="btn join-item"
+          class="btn btn-soft join-item"
           :disabled="modelValue === null"
           @click="$emit('update:modelValue', null)"
       >
         <span class="sr-only">{{ t('components.base.secretInput.clear', { label }) }}</span>
-        <x-circle-icon class="w-5 h-5"/>
+        <x-circle-icon class="size-5" aria-hidden="true"/>
       </button>
     </div>
   </div>
@@ -42,7 +42,7 @@
 
 <script setup lang="ts">
 import { computed, ref } from 'vue';
-import { XCircleIcon, EyeIcon, EyeSlashIcon } from '@heroicons/vue/24/solid';
+import { XCircleIcon, EyeIcon, EyeSlashIcon } from '@heroicons/vue/24/outline';
 import { useI18n } from 'vue-i18n';
 
 const { t } = useI18n();

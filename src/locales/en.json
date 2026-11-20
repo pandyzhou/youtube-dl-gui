@@ -26,7 +26,8 @@
       "partial": "Added {added} links to queue. Skipped {skipped} invalid entries.",
       "noneFound": "No valid links found in the input/file.",
       "readError": "Could not read that file."
-    }
+    },
+    "pause": "Pause"
   },
   "layout": {
     "header": {
@@ -37,18 +38,23 @@
         "watchClipboardStart": "Watch clipboard",
         "watchClipboardStop": "Stop watching clipboard",
         "importFile": "Import links",
-        "inputFilters": "Filters"
+        "inputFilters": "Filters",
+        "filtersOn": "On"
       },
       "nav": {
         "inputFilters": "Filters",
         "settings": "App Settings"
-      }
+      },
+      "title": "Queue",
+      "subtitle": "Paste one or more links. Hold Shift while clicking Add to start downloading right away.",
+      "inputLabel": "Link to download"
     },
     "footer": {
       "progress": {
         "downloading": "Downloading queue - {done} of {total} completed.",
         "completed": "Download complete – {n} item downloaded. | Download complete – {n} items downloaded.",
-        "ready": "Ready to download! {n} item queued. | Ready to download! {n} items queued."
+        "ready": "Ready to download! {n} item queued. | Ready to download! {n} items queued.",
+        "empty": "Nothing queued yet."
       },
       "nav": {
         "downloadLocation": "Locations",
@@ -78,7 +84,8 @@
           "noFormats": "No formats",
           "placeholder": "Select format",
           "screenReader": "Select format for all videos"
-        }
+        },
+        "label": "Format for all"
       },
       "queue": {
         "empty": "Empty queue",
@@ -89,7 +96,20 @@
         "clearPending": "Clear pending",
         "cancelDownloading": "Cancel downloading",
         "more": "More queue actions"
-      }
+      },
+      "downloadAll": "Download all"
+    },
+    "sidebar": {
+      "label": "Main",
+      "queue": "Queue",
+      "location": "Download location",
+      "authentication": "Login & cookies",
+      "subtitles": "Subtitles",
+      "filters": "Filters",
+      "settings": "Settings",
+      "enabled": "(on)",
+      "queueCount": "{n} in queue",
+      "version": "v{version}"
     }
   },
   "auth": {
@@ -155,7 +175,8 @@
     "toasts": {
       "error": "Unable to save authentication settings. {error}",
       "saved": "Authentication settings saved!"
-    }
+    },
+    "pageSubtitle": "Sign in to download private or members-only videos."
   },
   "media": {
     "view": {
@@ -336,7 +357,8 @@
         "showFolder": "Show in folder",
         "open": "Open file",
         "openFirst": "Open first file",
-        "undeterminedLocation": "Download location could not be determined for this item."
+        "undeterminedLocation": "Download location could not be determined for this item.",
+        "badge": "Done"
       },
       "error": {
         "errorPrefix": "Error - {message}",
@@ -435,7 +457,8 @@
       "ass": "Advanced SubStation Alpha (.ass)",
       "ttml": "Timed Text Markup (.ttml)",
       "json3": "JSON (.json)"
-    }
+    },
+    "pageSubtitle": "Save subtitles with your videos, or let AI create bilingual ones."
   },
   "location": {
     "title": "Download location",
@@ -518,7 +541,8 @@
     "toasts": {
       "saved": "Locations saved!",
       "error": "Unable to save locations."
-    }
+    },
+    "pageSubtitle": "Choose where downloads are saved and how files are named."
   },
   "inputFilters": {
     "title": "Input Filters",
@@ -618,13 +642,15 @@
     "toasts": {
       "saved": "Input filters saved!",
       "error": "Unable to save input filters. {error}"
-    }
+    },
+    "pageSubtitle": "Skip videos that do not match before they reach the queue."
   },
   "settings": {
     "title": "Settings",
     "reset": {
       "label": "Reset",
-      "confirm": "Click again to reset"
+      "confirm": "Click again to reset",
+      "more": "More options"
     },
     "tabs": {
       "downloads": "Downloads",

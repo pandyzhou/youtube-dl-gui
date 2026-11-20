@@ -6,9 +6,14 @@ name: 'Build Windows (unsigned)'
 #
 # Runs automatically on every push to main that changes the app itself, and can
 # also be started by hand. Lint and unit tests must pass before anything is
-# built. Every successful run publishes a GitHub Release tagged v<version>-zh.<N>;
-# the app is built as version <version>-zh.<N> so the in-app updater sees each
-# release as newer, and latest.json is attached for the updater.
+# built. Every successful run on main publishes a GitHub Release tagged
+# v<version>-zh.<N>; the app is built as version <version>-zh.<N> so the in-app
+# updater sees each release as newer, and latest.json is attached for the updater.
+#
+# Started by hand on any other branch, it builds a preview instead: version
+# <version>-zh.<last N>.<run number>, uploaded as a workflow artifact only. No
+# release or tag is created, so nobody's updater is offered it, and the next
+# real release still counts as newer than the preview.
 
 on:
   workflow_dispatch:
@@ -89,7 +94,11 @@ jobs:
             | { grep -v '\^{}' || true; } \
             | sed -E 's#.*-zh\.([0-9]+)$#\1#' \
             | sort -n | tail -n 1)"
-          APP_VERSION="${BASE}-zh.$(( ${LAST:-0} + 1 ))"
+          if [ "${GITHUB_REF}" = "refs/heads/main" ]; then
+            APP_VERSION="${BASE}-zh.$(( ${LAST:-0} + 1 ))"
+          else
+            APP_VERSION="${BASE}-zh.${LAST:-0}.${GITHUB_RUN_NUMBER}"
+          fi
 
           # Newest earlier release of any base version, for the change list.
           PREV_TAG="$(git tag --list 'v*-zh.*' --sort=-v:refname | sed -n 1p)"
@@ -138,11 +147,12 @@ jobs:
       - name: Upload build artifacts
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
-          name: open-video-downloader-windows-x64
+          name: open-video-downloader-${{ env.APP_VERSION }}-windows-x64
           path: release-assets/*
           if-no-files-found: error
 
       - name: Publish release
+        if: github.ref == 'refs/heads/main'
         shell: bash
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

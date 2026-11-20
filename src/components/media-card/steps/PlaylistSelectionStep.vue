@@ -1,77 +1,69 @@
 <template>
-  <div class="card-body py-0 pr-0 grow w-full min-w-0 overflow-hidden">
-    <div class="flex h-full min-h-0 flex-col gap-2">
-      <div class="flex items-center justify-between">
-        <h2
-          :title="group.title ?? group.url"
-          class="card-title block overflow-hidden text-ellipsis text-base leading-8 text-nowrap"
-        >
-          {{ group.title ?? group.url }}
-        </h2>
-        <span class="shrink-0 text-xs text-base-content/70 ml-2">{{ selectionSummary }}</span>
-      </div>
-
-      <p class="text-xs font-semibold flex-initial">
+  <div class="flex min-w-0 flex-col gap-2.5">
+    <div class="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
+      <p class="text-sm font-medium">
         {{ t('inputFilters.playlistSelection.description') }}
       </p>
+      <span class="text-xs text-base-content/60">{{ selectionSummary }}</span>
+    </div>
 
-      <div v-if="!hasAdvancedSelection" class="grid grid-cols-[auto_minmax(0,1fr)_auto_minmax(0,1fr)] items-center mr-1 gap-1.5">
-        <label class="text-xs font-semibold" for="playlist-selection-start">
-          {{ t('inputFilters.playlistSelection.fields.start') }}
-        </label>
-        <input
-          id="playlist-selection-start"
-          v-model.number="simpleStart"
-          type="number"
-          step="1"
-          class="input w-full"
-          :class="{ 'input-error': displaySimpleValidationError }"
-          :placeholder="t('inputFilters.playlistSelection.fields.startPlaceholder')"
-          @blur="simpleTouched = true"
-        />
-        <label class="text-xs font-semibold" for="playlist-selection-end">
-          {{ t('inputFilters.playlistSelection.fields.end') }}
-        </label>
-        <input
-          id="playlist-selection-end"
-          v-model.number="simpleEnd"
-          type="number"
-          step="1"
-          class="input w-full"
-          :class="{ 'input-error': displaySimpleValidationError }"
-          :placeholder="endPlaceholder"
-          @blur="simpleTouched = true"
-        />
-      </div>
+    <div v-if="!hasAdvancedSelection" class="grid grid-cols-[auto_minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-2">
+      <label class="text-sm text-base-content/70" for="playlist-selection-start">
+        {{ t('inputFilters.playlistSelection.fields.start') }}
+      </label>
+      <input
+        id="playlist-selection-start"
+        v-model.number="simpleStart"
+        type="number"
+        step="1"
+        class="input input-sm w-full"
+        :class="{ 'input-error': displaySimpleValidationError }"
+        :placeholder="t('inputFilters.playlistSelection.fields.startPlaceholder')"
+        @blur="simpleTouched = true"
+      />
+      <label class="text-sm text-base-content/70" for="playlist-selection-end">
+        {{ t('inputFilters.playlistSelection.fields.end') }}
+      </label>
+      <input
+        id="playlist-selection-end"
+        v-model.number="simpleEnd"
+        type="number"
+        step="1"
+        class="input input-sm w-full"
+        :class="{ 'input-error': displaySimpleValidationError }"
+        :placeholder="endPlaceholder"
+        @blur="simpleTouched = true"
+      />
+    </div>
 
-      <div v-else class="rounded-box bg-base-100 px-3 py-2 text-sm text-base-content/80">
-        <span class="font-semibold">{{ t('inputFilters.playlistSelection.fields.advancedLabel') }}</span>
-        <code class="ml-2 text-xs">{{ advancedSpec }}</code>
-      </div>
+    <div v-else class="rounded-lg bg-field px-3 py-2 text-sm text-base-content/80">
+      <span class="font-semibold">{{ t('inputFilters.playlistSelection.fields.advancedLabel') }}</span>
+      <code class="ml-2 text-xs">{{ advancedSpec }}</code>
+    </div>
 
-      <div class="mt-auto mb-1 flex flex-wrap gap-2">
-        <base-button type="button" class="btn-soft" @click="openAdvanced">
-          {{ t('inputFilters.playlistSelection.advancedButton') }}
-        </base-button>
-        <base-button
-          v-if="hasAdvancedSelection"
-          type="button"
-          class="btn-soft"
-          :disabled="isApplying"
-          @click="clearAdvanced"
-        >
-          {{ t('inputFilters.playlistSelection.simpleButton') }}
-        </base-button>
-        <base-button
-          type="button"
-          class="btn-primary"
-          :disabled="isApplying || !!validationError || (hasSelection && selectedEntries.length === 0)"
-          :loading="isApplying"
-          @click="applySelection"
-        >
-          {{ hasSelection ? t('inputFilters.playlistSelection.applySelection') : t('inputFilters.playlistSelection.applyFull') }}
-        </base-button>
-      </div>
+    <div class="flex flex-wrap items-center gap-2">
+      <base-button type="button" class="btn-soft btn-sm" @click="openAdvanced">
+        {{ t('inputFilters.playlistSelection.advancedButton') }}
+      </base-button>
+      <base-button
+        v-if="hasAdvancedSelection"
+        type="button"
+        class="btn-soft btn-sm"
+        :disabled="isApplying"
+        @click="clearAdvanced"
+      >
+        {{ t('inputFilters.playlistSelection.simpleButton') }}
+      </base-button>
+      <div class="flex-1" />
+      <base-button
+        type="button"
+        class="btn-primary btn-sm"
+        :disabled="isApplying || !!validationError || (hasSelection && selectedEntries.length === 0)"
+        :loading="isApplying"
+        @click="applySelection"
+      >
+        {{ hasSelection ? t('inputFilters.playlistSelection.applySelection') : t('inputFilters.playlistSelection.applyFull') }}
+      </base-button>
     </div>
 
     <playlist-selection-modal

@@ -10,7 +10,7 @@
     >
       <template #video>
         <base-file-input
-            class="max-w-4xl my-2"
+            class="w-full"
             v-model="prefs.paths.videoDownloadDir"
             :label="t('location.directory.videoDir.label')"
             :recent-values="recentValues.videoDir"
@@ -18,7 +18,7 @@
             show-recent
             directory
         />
-        <p class="label mb-4">{{ t('location.directory.videoDir.hint') }}</p>
+        <p class="label mb-3">{{ t('location.directory.videoDir.hint') }}</p>
         <directory-preset-selector
             id-prefix="video"
             :presets="dirPresets"
@@ -33,7 +33,7 @@
 
       <template #audio>
         <base-file-input
-            class="max-w-4xl my-2"
+            class="w-full"
             v-model="prefs.paths.audioDownloadDir"
             :label="t('location.directory.audioDir.label')"
             :recent-values="recentValues.audioDir"
@@ -41,7 +41,7 @@
             show-recent
             directory
         />
-        <p class="label mb-4">{{ t('location.directory.audioDir.hint') }}</p>
+        <p class="label mb-3">{{ t('location.directory.audioDir.hint') }}</p>
         <directory-preset-selector
             id-prefix="audio"
             :presets="dirPresets"
