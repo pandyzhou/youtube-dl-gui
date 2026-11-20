@@ -1,14 +1,20 @@
 name: 'Build Windows (unsigned)'
 
 # Unsigned Windows x64 build for this fork. Unlike publish.yml it needs no
-# secrets: updater artifacts, code signing, Sentry and release upload are skipped.
-# The installer and the raw exe are uploaded as workflow artifacts.
+# secrets: updater artifacts, code signing and Sentry are skipped.
+# Every successful run publishes a GitHub Release tagged v<version>-zh.<N>
+# with the installer and the portable exe, and also uploads them as artifacts.
 
 on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
+
+# Serialise runs so two builds never compute the same release number.
+concurrency:
+  group: build-windows
+  cancel-in-progress: false
 
 jobs:
   build:
@@ -59,3 +65,36 @@ jobs:
           name: open-video-downloader-windows-x64-exe
           path: src-tauri/target/release/open-video-downloader.exe
           if-no-files-found: error
+
+      - name: Publish release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          VERSION="$(node -p 'require("./package.json").version')"
+
+          # Next N for v<version>-zh.<N>, based on tags already on the remote.
+          LAST="$(git ls-remote --tags origin "refs/tags/v${VERSION}-zh.*" \
+            | { grep -v '\^{}' || true; } \
+            | sed -E 's#.*-zh\.([0-9]+)$#\1#' \
+            | sort -n | tail -n 1)"
+          TAG="v${VERSION}-zh.$(( ${LAST:-0} + 1 ))"
+          echo "Publishing ${TAG}"
+
+          mkdir -p release-assets
+          cp src-tauri/target/release/bundle/nsis/*.exe \
+            "release-assets/Open.Video.Downloader_${TAG#v}_x64-setup.exe"
+          cp src-tauri/target/release/open-video-downloader.exe \
+            "release-assets/Open.Video.Downloader_${TAG#v}_x64-portable.exe"
+
+          gh release create "${TAG}" release-assets/*.exe \
+            --target "${GITHUB_SHA}" \
+            --title "Open Video Downloader ${TAG}（简体中文）" \
+            --notes "基于 Open Video Downloader v${VERSION}，增加简体中文界面的非官方构建。
+
+          - \`*-setup.exe\`：安装包
+          - \`*-portable.exe\`：免安装版
+
+          构建自提交 ${GITHUB_SHA}。程序未签名，首次运行时 Windows SmartScreen 可能提示风险，点“更多信息”→“仍要运行”即可。
+          注意：应用内的自动更新仍指向官方版本，接受更新会被替换为官方版（不含简体中文）。"
