@@ -4,17 +4,36 @@ name: 'Build Windows (unsigned)'
 # signing and Sentry, so the only secret needed is TAURI_SIGNING_PRIVATE_KEY
 # (the updater key matching plugins.updater.pubkey in tauri.conf.json).
 #
-# Every successful run publishes a GitHub Release tagged v<version>-zh.<N>.
-# The app itself is built as version <version>-zh.<N> so the in-app updater
-# sees each release as newer, and latest.json is attached for the updater.
+# Runs automatically on every push to main that changes the app itself, and can
+# also be started by hand. Lint and unit tests must pass before anything is
+# built. Every successful run publishes a GitHub Release tagged v<version>-zh.<N>;
+# the app is built as version <version>-zh.<N> so the in-app updater sees each
+# release as newer, and latest.json is attached for the updater.
 
 on:
   workflow_dispatch:
+  push:
+    branches: [main]
+    # Only changes that end up in the app trigger a release; docs, tests and
+    # workflow edits do not (use "Run workflow" to build those by hand).
+    paths:
+      - 'src/**'
+      - 'src-isolation/**'
+      - 'src-tauri/**'
+      - 'public/**'
+      - 'index.html'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'vite.config.ts'
+      - 'vite.config.isolation.ts'
+      - 'tsconfig.json'
+      - 'tsconfig.node.json'
 
 permissions:
   contents: write
 
-# Serialise runs so two builds never compute the same release number.
+# Serialise runs so two builds never compute the same release number. If several
+# pushes arrive while a build is running, only the newest one is built next.
 concurrency:
   group: build-windows
   cancel-in-progress: false
@@ -26,12 +45,23 @@ jobs:
       CARGO_TERM_COLOR: always
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          # Full history and tags, to list the commits since the previous release.
+          fetch-depth: 0
 
       - name: setup node
         uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: 24
           cache: 'npm'
+
+      - name: Install frontend dependencies
+        run: npm ci
+
+      - name: Lint and unit tests
+        run: |
+          npm run lint
+          npm run test:unit -- --coverage.enabled=false
 
       - name: install Rust 1.94.1
         uses: dtolnay/rust-toolchain@3c5f7ea28cd621ae0bf5283f0e981fb97b8a7af9 # rust-toolchain action
@@ -48,9 +78,6 @@ jobs:
         with:
           workspaces: './src-tauri -> target'
 
-      - name: Install frontend dependencies
-        run: npm ci
-
       - name: Determine release version
         shell: bash
         run: |
@@ -63,11 +90,15 @@ jobs:
             | sed -E 's#.*-zh\.([0-9]+)$#\1#' \
             | sort -n | tail -n 1)"
           APP_VERSION="${BASE}-zh.$(( ${LAST:-0} + 1 ))"
-          echo "Building ${APP_VERSION}"
+
+          # Newest earlier release of any base version, for the change list.
+          PREV_TAG="$(git tag --list 'v*-zh.*' --sort=-v:refname | sed -n 1p)"
+          echo "Building ${APP_VERSION} (previous release: ${PREV_TAG:-none})"
 
           echo "BASE_VERSION=${BASE}" >> "$GITHUB_ENV"
           echo "APP_VERSION=${APP_VERSION}" >> "$GITHUB_ENV"
           echo "TAG=v${APP_VERSION}" >> "$GITHUB_ENV"
+          echo "PREV_TAG=${PREV_TAG}" >> "$GITHUB_ENV"
 
       - name: Build app
         shell: bash
@@ -117,15 +148,29 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -euo pipefail
+          CHANGES=""
+          if [ -n "${PREV_TAG}" ]; then
+            CHANGES="$(git log --no-merges --pretty='- %s' "${PREV_TAG}..${GITHUB_SHA}")"
+          fi
+          [ -n "${CHANGES}" ] || CHANGES="- 无代码改动（重新构建）"
+
+          {
+            echo "基于 Open Video Downloader v${BASE_VERSION}，增加简体中文界面的非官方构建。"
+            echo
+            echo "### 更新内容"
+            if [ -n "${PREV_TAG}" ]; then echo "自 ${PREV_TAG} 以来："; fi
+            printf '%s\n' "${CHANGES}"
+            echo
+            echo "### 下载"
+            echo '- `*-setup.exe`：安装包'
+            echo '- `*-portable.exe`：免安装版'
+            echo '- `latest.json`：供应用内自动更新使用，无需下载'
+            echo
+            echo "构建自提交 ${GITHUB_SHA}。程序未签名，首次运行时 Windows SmartScreen 可能提示风险，点“更多信息”→“仍要运行”即可。应用内的自动更新会从本仓库获取新版本。"
+          } > release-notes.md
+
           gh release create "${TAG}" release-assets/* \
             --target "${GITHUB_SHA}" \
             --latest \
             --title "Open Video Downloader ${TAG}（简体中文）" \
-            --notes "基于 Open Video Downloader v${BASE_VERSION}，增加简体中文界面的非官方构建。
-
-          - \`*-setup.exe\`：安装包
-          - \`*-portable.exe\`：免安装版
-          - \`latest.json\`：供应用内自动更新使用，无需下载
-
-          构建自提交 ${GITHUB_SHA}。程序未签名，首次运行时 Windows SmartScreen 可能提示风险，点“更多信息”→“仍要运行”即可。
-          应用内的自动更新会从本仓库获取新版本。"
+            --notes-file release-notes.md
