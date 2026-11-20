@@ -121,6 +121,11 @@
         background-color: color-mix(in oklab, var(--ovd-field) 60%, var(--color-base-100));
     }
 
+    /* Checkboxes stay square-ish; --radius-selector rounds toggles and badges fully. */
+    :where(.checkbox) {
+        border-radius: 0.3125rem;
+    }
+
     /* Hints in settings cards wrap instead of running off the card. */
     :where(.settings-body) :where(.label) {
         white-space: normal;
