@@ -248,6 +248,7 @@ func TestQueueScreenshots(t *testing.T) {
 			{"queue-cards", func(a *App) {}},
 			{"queue-details", showDetails},
 			{"queue-select", showSelection},
+			{"queue-custom", showCustom},
 		}
 		for _, shot := range shots {
 			name := shot.name
@@ -320,4 +321,10 @@ func TestCustomFormatPanel(t *testing.T) {
 	if !tt.HasText("最佳音质") || tt.HasText("视频编码：自动") {
 		t.Errorf("audio controls wrong, texts %q", tt.Texts())
 	}
+}
+
+func showCustom(a *App) {
+	q := a.queue.(*fakeQueue)
+	q.jobs = append([]engine.JobView{customJob()}, q.jobs...)
+	q.SetCustom("c", ytdlp.FormatOptions{TrackType: ytdlp.TrackBoth, Height: 1080, Fps: 30, VideoEncoding: "vp9"})
 }
