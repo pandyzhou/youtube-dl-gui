@@ -1,0 +1,94 @@
+name: Go CI
+
+# Checks: formatting, vet, unit and UI tests. The UI
+# tests also render screenshots of the main pages, uploaded as the
+# go-screenshots artifact for review.
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main, mygo]
+  pull_request:
+    branches: [main]
+    paths:
+      - '**.go'
+      - 'go.mod'
+      - 'go.sum'
+      - 'mygo.json'
+      - 'internal/**'
+      - 'cmd/**'
+      - 'resources/**'
+      - '.github/workflows/go-ci.yml'
+
+permissions:
+  contents: read
+
+env:
+  GOFLAGS: -mod=readonly
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: false
+
+      - name: Go build cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/go-build
+            ~/go/pkg/mod
+          key: go-test-${{ hashFiles('go.mod', 'go.sum') }}
+          restore-keys: go-test-
+
+      # MyGo draws text with Pango on Linux; without these the UI tests and
+      # screenshots have no glyphs. Noto CJK covers the Chinese labels.
+      - name: Install text rendering libraries
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libpango-1.0-0 libpangocairo-1.0-0 libcairo2 fonts-noto-cjk
+
+      - name: Tidy modules
+        run: |
+          go mod tidy
+          mkdir -p go-modules
+          cp go.mod go.sum go-modules/
+
+      - name: Upload go.mod and go.sum
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: go-modules
+          path: go-modules/
+
+      - name: gofmt
+        run: |
+          unformatted="$(gofmt -l $(git ls-files '*.go'))"
+          if [ -n "$unformatted" ]; then echo "Not gofmt-formatted:"; gofmt -d $unformatted; exit 1; fi
+
+      - name: go vet
+        run: go vet ./...
+
+      # The tests run on Linux; this compiles and vets the Windows-only code
+      # (Job Objects, CREATE_NO_WINDOW) too.
+      - name: go vet (windows)
+        env:
+          GOOS: windows
+        run: go vet ./...
+
+      - name: Tests
+        env:
+          SCREENSHOT_DIR: ${{ github.workspace }}/screenshots
+        run: go test ./...
+
+      - name: Upload screenshots
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: go-screenshots
+          path: screenshots/
+          if-no-files-found: ignore

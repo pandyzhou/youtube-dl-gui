@@ -1,0 +1,21 @@
+{
+  "name": "Open Video Downloader",
+  "slug": "open-video-downloader",
+  "identifier": "io.github.pandyzhou.ovd",
+  "version": "4.0.0",
+  "main": "./cmd/ovd",
+  "out": "build",
+  "icon": "resources/icon.png",
+  "publisher": "pandyzhou",
+  "windows": {
+    "displayName": "Open Video Downloader",
+    "installDirName": "Open Video Downloader"
+  },
+  "linux": {
+    "webview": false
+  },
+  "updates": {
+    "publicKey": "rlr6/91+8pba81kiwb9hLbetCPKKcjsQFTMSvIsoNj4=",
+    "github": "pandyzhou/youtube-dl-gui"
+  }
+}

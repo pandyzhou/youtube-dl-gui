@@ -1,0 +1,118 @@
+name: MyGo build (Windows)
+
+# Builds Open Video Downloader for Windows x64 on Linux (MyGo needs no cgo,
+# NSIS makes the installer). Other branches get a preview artifact; main
+# publishes the next 4.0.N release, signed for auto-updates, with the
+# installer, the portable exe and the update files.
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main, mygo]
+    paths:
+      - '**.go'
+      - 'go.mod'
+      - 'go.sum'
+      - 'mygo.json'
+      - 'internal/**'
+      - 'cmd/**'
+      - 'resources/**'
+      - '.github/workflows/mygo-build.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: mygo-build-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+
+jobs:
+  windows:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # the release on main
+    env:
+      GOFLAGS: -tags=mygo_nowebview
+      RELEASE: ${{ github.ref == 'refs/heads/main' }}
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          fetch-depth: 0 # the tags, for the next version
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: false
+
+      - name: Go build cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/go-build
+            ~/go/pkg/mod
+          key: go-build-windows-${{ hashFiles('go.mod', 'go.sum') }}
+          restore-keys: go-build-windows-
+
+      - name: Install NSIS
+        run: sudo apt-get update && sudo apt-get install -y nsis
+
+      - name: Stamp the version
+        run: |
+          if [ "$RELEASE" = "true" ]; then
+            last="$(git tag -l 'v4.0.*' | sed 's/^v4\.0\.//' | grep -E '^[0-9]+$' | sort -n | tail -1)"
+            version="4.0.$(( ${last:--1} + 1 ))"
+          else
+            version="$(jq -r .version mygo.json)-preview.${GITHUB_RUN_NUMBER}"
+          fi
+          jq --arg v "$version" '.version = $v' mygo.json > mygo.tmp && mv mygo.tmp mygo.json
+          echo "VERSION=$version" >> "$GITHUB_ENV"
+          echo "Building $version"
+
+      - name: Draft the release
+        if: env.RELEASE == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          tag="v$VERSION"
+          git tag "$tag" "$GITHUB_SHA"
+          git push origin "$tag"
+          cat > notes.md <<'EOF'
+          Windows x64 · 简体中文。
+
+          - 安装包：`open-video-downloader-setup-*-amd64.exe`
+          - 免安装版：`Open Video Downloader.exe`
+
+          3.x（Tauri 版）不会自动更新到 4.x，请手动安装一次；第一次启动会导入旧版设置（登录信息和 API Key 需要重新填写）。之后的版本会自动更新。
+          EOF
+          gh release create "$tag" --draft --verify-tag --title "$tag" --notes-file notes.md
+
+      - name: Build
+        env:
+          GH_TOKEN: ${{ github.token }}
+          # Signs the update archive when the secret is set.
+          MYGO_UPDATER_PRIVATE_KEY: ${{ secrets.MYGO_UPDATER_PRIVATE_KEY }}
+        run: |
+          if [ "$RELEASE" = "true" ]; then
+            go tool mygo build -platform windows/amd64 -upload
+          else
+            go tool mygo build -platform windows/amd64
+          fi
+
+      - name: List output
+        run: ls -la build/windows-amd64 || find build -maxdepth 3
+
+      - name: Publish the release
+        if: env.RELEASE == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release upload "v$VERSION" "build/windows-amd64/Open Video Downloader.exe" --clobber
+          gh release edit "v$VERSION" --draft=false --latest
+
+      - name: Upload preview
+        if: env.RELEASE != 'true'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: ovd-${{ env.VERSION }}-windows-x64
+          path: build/windows-amd64/
+          if-no-files-found: error

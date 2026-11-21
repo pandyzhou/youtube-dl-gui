@@ -1,89 +1,35 @@
-<img src="https://raw.githubusercontent.com/jely2002/youtube-dl-gui/v2.0.0/renderer/img/icon.png" alt="logo" align="left" height="100"/>
+# Open Video Downloader（简体中文 · Windows）
 
-# Open Video Downloader (youtube-dl-gui) <br> ![version badge](https://img.shields.io/github/v/release/jely2002/youtube-dl-gui?label=latest-release) ![GitHub](https://img.shields.io/github/license/jely2002/youtube-dl-gui) ![downloads](https://img.shields.io/github/downloads/jely2002/youtube-dl-gui/total) 
-[https://jely2002.github.io/youtube-dl-gui](https://jely2002.github.io/youtube-dl-gui)
+基于 [yt-dlp](https://github.com/yt-dlp/yt-dlp) 的视频下载器，用 [MyGo](https://github.com/egoist/mygo) 原生界面重写，只支持 Windows x64，界面为简体中文。
 
-Open Video Downloader is a simple, cross-platform desktop application that lets you download videos, audio, subtitles and metadata from hundreds of supported websites, not just YouTube.  
-It provides an easy-to-use interface around [yt-dlp](https://github.com/yt-dlp/yt-dlp) so you don’t have to touch the command line.
+本项目 fork 自 [jely2002/youtube-dl-gui](https://github.com/jely2002/youtube-dl-gui)。3.x 的 Tauri 版本保留在标签 `tauri-final`。
 
+## 功能
 
-## Features
+- **一步下载**：粘贴链接后，按画质预设（最佳、2160p … 480p、仅音频、自定义）直接开始。卡片上会显示实际匹配到的分辨率和大约的文件大小。
+- **播放列表**：可以选择范围，也可以拆分成单个视频或合并成一张卡片。
+- **AI 双语字幕**：调用 OpenAI 兼容接口，把字幕翻译成中英双语。
+  - YouTube 自动字幕会按词级时间重新分句。
+  - 高质量模式会先通读全文，整理出主题和术语表。
+  - 请求是流式的，中断后可以从断点继续。
+  - 字幕默认封装进视频：MKV 是带描边的 ASS，MP4 是纯文本。
+- **为已有视频补字幕**：在设置里选择视频，或把视频文件拖进下载队列。
+- **系统集成**：托盘、全局快捷键（Alt+Shift+V / D / Enter）、通知、开机启动、任务栏进度、自动更新。
 
-- **Cross-platform:** works on Windows, macOS and Linux.
-- **Audio or video downloads:** grab full videos or extract only the audio track.
-- **Subtitles and metadata:** automatically saves available captions and video information.
-- **Quality control:** choose your preferred resolution, frame rate, and output format like MP4 or MKV.
-- **Playlists:** download entire playlists in one go.
-- **Custom output:** set your download location and control filenames using presets or custom templates.
-- **Smart queueing:** OVD balances multiple downloads automatically so your computer doesn’t slow down.
-- **Authentication:** supports browser cookie files, basic auth and video passwords.
-- **Automatic updates:** both the app and yt-dlp are kept up to date automatically.
-- **Light and dark mode:** adapts to your system theme with clear progress and error handling.
-- **Shortcuts:** queue and download videos using shortcuts, stay up-to-date on progress with notifications.
+## 安装
 
-## Download
+在 [Releases](https://github.com/pandyzhou/youtube-dl-gui/releases) 下载安装包或免安装版 exe。第一次启动时会下载 yt-dlp、ffmpeg 等工具（约 150 MB），之后自动更新。
 
-The latest versions for **Windows**, **macOS** and **Linux** are available on the  
-[GitHub Releases page](https://github.com/jely2002/youtube-dl-gui/releases).
+3.x（Tauri 版）不会自动更新到 4.x，需要手动安装一次。新版第一次启动时会导入旧版设置，但登录信息和 API Key 要重新填写。
 
-Download the installer or archive for your platform and follow the normal installation steps.  
-No command-line setup is required.
+## 开发
 
-#### What file do I download?
-| Your Computer                         | Download                                       |
-|---------------------------------------|------------------------------------------------|
-| **Windows**                           | `Open.Video.Downloader_x.x.x_x64-setup.exe`    |
-| **Mac (Intel)**                       | `Open.Video.Downloader_x.x.x_x64.dmg`          |
-| **Mac (Apple Silicon – M1, M2 … M5)** | `Open.Video.Downloader_x.x.x_aarch64.dmg`      |
-| **Linux generic (x64)**               | `Open.Video.Downloader_x.x.x_amd64.AppImage`   |
-| **Linux generic (aarch64)**           | `Open.Video.Downloader_x.x.x_aarch64.AppImage` |
-| **Linux Debian/Ubuntu (x64)**         | `Open.Video.Downloader_x.x.x_amd64.deb`        |
-| **Linux Debian/Ubuntu (aarch64)**     | `Open.Video.Downloader_x.x.x_arm64.deb`        |
-| **Linux Fedora/RHEL (x64)**           | `Open.Video.Downloader_x.x.x-x_amd64.rpm`      |
-| **Linux Fedora/RHEL (aarch64)**       | `Open.Video.Downloader_x.x.x-x_aarch64.rpm`    |
+- Go 1.27，界面用 MyGo v0.10（`go tool mygo`）。
+- 代码在 `cmd/ovd`（入口）和 `internal/`（`ytdlp` 参数与解析、`engine` 队列、`translate` 翻译、`ui` 界面等）。
+- 构建和测试都在 GitHub Actions 上运行：
+  - `Go CI`：gofmt、vet、单元测试、界面测试和截图；
+  - `MyGo build (Windows)`：分支上生成预览包，main 上发布正式版本。
 
-#### Download using the command line
-Open Video Downloader can be downloaded using command line tools like [Homebrew](https://brew.sh/) on Mac or [WinGet](https://github.com/microsoft/winget-cli) on Windows.
+## 许可证
 
-```shell
-brew install --cask open-video-downloader
-```
-
-```shell
-winget install -e --id jely2002.youtube-dl-gui
-```
-
-#### Download from the Microsoft Store
-Open Video Downloader is available on the Microsoft Store, although we recommend using the GitHub releases download instead.
-This is due to updates taking longer to arrive and auto-updating yt-dlp is also not supported.
-
-<a href="https://apps.microsoft.com/detail/9p53s4t9znj5?referrer=appbadge&cid=gh-readme&mode=full" target="_blank"  rel="noopener noreferrer">
-	<img src="https://get.microsoft.com/images/en-us%20dark.svg" width="200" alt="OVD download badge for Microsoft Store"/>
-</a>
-
-## How it works
-
-Open Video Downloader uses a front-end built with Vue 3 and a Rust backend powered by [Tauri](https://tauri.app/).  
-When you add a video or playlist, the app communicates with yt-dlp to fetch information, process options and start the download.  
-The download progress and any errors are displayed in the app.
-
-## Contributing
-
-Developers are welcome to contribute.  
-You’ll need Node.js (v24+) and Rust installed.
-
-```
-npm install
-npm run tauri dev
-```
-
-For more details, see [CONTRIBUTING.md](./CONTRIBUTING.md).
-
-## License and disclaimer
-
-Open Video Downloader is distributed under the [AGPL-3.0 license](./LICENSE).
-
-#### Use this application responsibly
-The maintainers of Open Video Downloader cannot be held liable for misuse of this application, as stated in the AGPL-3.0 license (section 16).  
-We do not condone the use of this software to violate local laws or platform terms of service (including the DMCA).  
-Users are personally responsible for ensuring they use this software fairly and within legal boundaries.
+[AGPL-3.0](LICENSE)
