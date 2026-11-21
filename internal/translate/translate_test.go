@@ -3,6 +3,7 @@ package translate
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
@@ -71,11 +72,11 @@ func TestChatCompletionsURL(t *testing.T) {
 }
 
 func TestMakeBatches(t *testing.T) {
-	short := make([]string, 120)
+	short := make([]string, 60)
 	for i := range short {
 		short[i] = "hello there"
 	}
-	if b := makeBatches(short); len(b) != 1 || len(b[0].lines) != 120 || len(b[0].context) != 0 {
+	if b := makeBatches(short); len(b) != 1 || len(b[0].lines) != 60 || len(b[0].context) != 0 {
 		t.Errorf("short video: %d batches", len(b))
 	}
 	many := make([]string, 600)
@@ -87,13 +88,13 @@ func TestMakeBatches(t *testing.T) {
 	for _, x := range b {
 		sizes = append(sizes, len(x.lines))
 	}
-	if !reflect.DeepEqual(sizes, []int{120, 120, 120, 120, 120}) || b[1].start != 120 || len(b[1].context) != 5 {
+	if len(sizes) != 10 || sizes[0] != 60 || b[1].start != 60 || len(b[1].context) != 5 {
 		t.Errorf("sizes %v", sizes)
 	}
-	if len(b[0].after) != 3 || len(b[4].after) != 0 {
-		t.Errorf("following context %d, %d", len(b[0].after), len(b[4].after))
+	if len(b[0].after) != 3 || len(b[9].after) != 0 {
+		t.Errorf("following context %d, %d", len(b[0].after), len(b[9].after))
 	}
-	long := []string{strings.Repeat("y", 3000), strings.Repeat("y", 3000), strings.Repeat("y", 3000)}
+	long := []string{strings.Repeat("y", 2000), strings.Repeat("y", 2000), strings.Repeat("y", 2000)}
 	if b := makeBatches(long); len(b) != 3 {
 		t.Errorf("character budget: %d batches", len(b))
 	}
@@ -511,7 +512,7 @@ func TestCheckpointResumes(t *testing.T) {
 	for i := range 300 {
 		texts = append(texts, fmt.Sprintf("line %d", i))
 	}
-	texts[200] = "Bye" // the second batch fails outright the first time
+	texts[200] = "Bye" // its batch fails outright the first time
 	c, _ := chatConfig(e)
 	rec := &recorder{}
 	cp := openCheckpoint(e.CacheDir, "https://v/a\nen", texts, c.target)
@@ -537,5 +538,33 @@ func TestCheckpointResumes(t *testing.T) {
 	if openCheckpoint(e.CacheDir, "https://v/a\nen", texts[1:], c.target).count() != 0 ||
 		openCheckpoint(e.CacheDir, "https://v/a\nen", texts, "English").count() != 0 {
 		t.Error("checkpoint reused for different lines or language")
+	}
+}
+
+func TestStreamedReply(t *testing.T) {
+	var streamed bool
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		var body map[string]any
+		json.NewDecoder(r.Body).Decode(&body)
+		streamed = body["stream"] == true
+		w.Header().Set("Content-Type", "text/event-stream")
+		for _, part := range []string{`["你`, `好", "再`, `见"]`} {
+			b, _ := json.Marshal(map[string]any{"choices": []map[string]any{{"delta": map[string]string{"content": part}}}})
+			w.Write([]byte("data: " + string(b) + "\n\n"))
+		}
+		w.Write([]byte(`data: {"choices": [{"delta": {}, "finish_reason": "stop"}]}` + "\n\ndata: [DONE]\n\n"))
+	}))
+	t.Cleanup(srv.Close)
+	e := env(t, srv, nil)
+	c, _ := chatConfig(e)
+	out, err := request(context.Background(), e, c, batch{lines: []string{"Hello", "Bye"}})
+	if err != nil || !streamed || !reflect.DeepEqual(out, []string{"你好", "再见"}) {
+		t.Errorf("streamed %v: %q, %v", streamed, out, err)
+	}
+	if _, err := readStream(strings.NewReader("data: {\"choices\": [{\"delta\": {\"content\": \"[\"}, \"finish_reason\": \"length\"}]}\n")); !errors.Is(err, errTooLong) {
+		t.Errorf("cut off: %v", err)
+	}
+	if _, err := readStream(strings.NewReader("data: {\"error\": {\"message\": \"overloaded\"}}\n")); err == nil || !strings.Contains(err.Error(), "overloaded") {
+		t.Errorf("error chunk: %v", err)
 	}
 }

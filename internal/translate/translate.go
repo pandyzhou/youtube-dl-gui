@@ -5,6 +5,7 @@
 package translate
 
 import (
+	"bufio"
 	"bytes"
 	"context"
 	"encoding/json"
@@ -29,11 +30,12 @@ import (
 // Tuning.
 const (
 	// batchChars bounds the source characters per request, so the reply
-	// stays under the output limit many providers apply.
-	batchChars = 2500
+	// stays under the output limit many providers apply and comes back in
+	// a minute or two.
+	batchChars = 1500
 	// batchMaxLines bounds the lines per request: smaller batches keep the
 	// model returning exactly one translation per line.
-	batchMaxLines = 120
+	batchMaxLines = 60
 	// contextLines before a batch and followLines after it go along for
 	// context only, so sentences cut by the batch edge read right.
 	contextLines = 5
@@ -783,7 +785,11 @@ func request(ctx context.Context, env Env, c chat, b batch) ([]string, error) {
 	return out, nil
 }
 
-// complete sends one chat request and returns the reply's text.
+// complete sends one chat request and returns the reply's text. It asks
+// for a stream: gateways such as Cloudflare cut a request off after about
+// two minutes without a byte (HTTP 524), which a slow model answering a
+// long batch reaches, while a stream keeps data flowing. Providers that
+// ignore stream answer with plain JSON, which is read too.
 func complete(ctx context.Context, env Env, c chat, system, user string) (string, error) {
 	payload := map[string]any{
 		"model": c.model,
@@ -791,6 +797,7 @@ func complete(ctx context.Context, env Env, c chat, system, user string) (string
 			{"role": "system", "content": system},
 			{"role": "user", "content": user},
 		},
+		"stream": true,
 	}
 	if c.effort != "" {
 		payload["reasoning_effort"] = c.effort
@@ -807,6 +814,9 @@ func complete(ctx context.Context, env Env, c chat, system, user string) (string
 		return "", err
 	}
 	defer resp.Body.Close()
+	if resp.StatusCode == http.StatusOK && strings.Contains(resp.Header.Get("Content-Type"), "text/event-stream") {
+		return readStream(resp.Body)
+	}
 	data, err := io.ReadAll(io.LimitReader(resp.Body, 16<<20))
 	if err != nil {
 		return "", err
@@ -836,6 +846,58 @@ func complete(ctx context.Context, env Env, c chat, system, user string) (string
 		return "", errTooLong
 	}
 	return reply.Choices[0].Message.Content, nil
+}
+
+// readStream reads a chat completion stream (server-sent events) into the
+// reply's text.
+func readStream(body io.Reader) (string, error) {
+	var text strings.Builder
+	finish := ""
+	scanner := bufio.NewScanner(io.LimitReader(body, 16<<20))
+	scanner.Buffer(make([]byte, 64<<10), 4<<20)
+	for scanner.Scan() {
+		data, ok := strings.CutPrefix(scanner.Text(), "data:")
+		data = strings.TrimSpace(data)
+		if !ok || data == "" {
+			continue
+		}
+		if data == "[DONE]" {
+			break
+		}
+		var chunk struct {
+			Choices []struct {
+				Delta struct {
+					Content string `json:"content"`
+				} `json:"delta"`
+				FinishReason string `json:"finish_reason"`
+			} `json:"choices"`
+			Error *struct {
+				Message string `json:"message"`
+			} `json:"error"`
+		}
+		if err := json.Unmarshal([]byte(data), &chunk); err != nil {
+			continue
+		}
+		if chunk.Error != nil {
+			return "", errors.New("the stream ended with an error: " + chunk.Error.Message)
+		}
+		for _, ch := range chunk.Choices {
+			text.WriteString(ch.Delta.Content)
+			if ch.FinishReason != "" {
+				finish = ch.FinishReason
+			}
+		}
+	}
+	if err := scanner.Err(); err != nil {
+		return "", fmt.Errorf("the stream broke off: %w", err)
+	}
+	if finish == "length" {
+		return "", errTooLong
+	}
+	if text.Len() == 0 {
+		return "", errors.New("the stream had no text")
+	}
+	return text.String(), nil
 }
 
 // ParseTranslations pulls the JSON array of strings out of a model reply,
