@@ -2,6 +2,7 @@ package ui
 
 import (
 	"fmt"
+	"net/url"
 	"strings"
 
 	"github.com/egoist/mygo/transfer"
@@ -242,14 +243,14 @@ func (a *App) jobCard(c *ui.Context, p palette, j engine.JobView) {
 	})
 }
 
-func thumbnail(c *ui.Context, p palette, url string) {
-	if url == "" {
+func thumbnail(c *ui.Context, p palette, src string) {
+	if src == "" {
 		ui.Column(c).Size(thumbWidth, thumbHeight).Radius(6).Background(p.control).Center().Children(func() {
 			ui.Icon(c, iconFileVideo).FontSize(22).TextColor(p.muted)
 		})
 		return
 	}
-	netimage.Image(c, url, netimage.Options{MaxSide: 256}).Size(thumbWidth, thumbHeight).Radius(6).Background(p.control)
+	netimage.Image(c, src, netimage.Options{MaxSide: 256}).Size(thumbWidth, thumbHeight).Radius(6).Background(p.control)
 }
 
 // jobMeta is the card's second line: playlist size, uploader, duration,
@@ -278,7 +279,10 @@ func jobMeta(j engine.JobView) string {
 		parts = append(parts, "约 "+formatBytes(j.Size))
 	}
 	if len(parts) == 0 {
-		return j.URL
+		if u, err := url.Parse(j.URL); err == nil && u.Host != "" {
+			return u.Host // the title shows the whole link
+		}
+		return ""
 	}
 	return strings.Join(parts, " · ")
 }
@@ -306,7 +310,7 @@ func (a *App) jobStatus(c *ui.Context, p palette, j engine.JobView) {
 			line(fmt.Sprintf("正在获取视频信息 %d/%d", got, len(j.Items)), p.muted)
 		})
 	case engine.StatusSelecting:
-		line(fmt.Sprintf("这是一个播放列表，共 %d 个视频，请选择要下载的部分。", len(j.Playlist.Entries)), p.muted)
+		line("选择要下载的视频，或全部下载", p.muted)
 	case engine.StatusQueued, engine.StatusDownloading, engine.StatusPaused:
 		ui.Row(c).Gap(10).AlignItems(ui.Center).Children(func() {
 			bar := ui.Progress(c, j.Percent/100).Grow(1).Label("下载进度")
