@@ -1,0 +1,48 @@
+package ui
+
+// Code generated from src/locales/zh-CN.json (errors.runner) of the Tauri
+// app; edit freely, the source goes away with it.
+
+// diagnosticText explains a diagnostic code: a short title and a sentence.
+var diagnosticText = map[string][2]string{
+	"internal":                      {"内部错误", "处理此项目时发生内部错误。"},
+	"signInRequired":                {"需要登录", "您需要登录才能查看此内容。"},
+	"membersOnly":                   {"仅限会员", "此视频仅限频道会员观看。"},
+	"geoBlocked":                    {"地区限制", "此内容在您所在的地区不可用。"},
+	"accessForbidden403":            {"拒绝访问", "您没有权限访问此资源（HTTP 403）。"},
+	"notFound404":                   {"未找到", "未找到请求的视频或播放列表（HTTP 404）。"},
+	"server5xx":                     {"服务器错误", "服务器暂时出现问题，请稍后重试。"},
+	"rateLimited429":                {"请求过于频繁", "发送的请求过多，请稍后重试。"},
+	"requestedFormatUnavailable":    {"格式不可用", "所选格式不适用于此视频。"},
+	"unableToExtractInitialData":    {"数据提取失败", "无法提取必要的视频初始数据。"},
+	"unableToExtractIdOrInfo":       {"元数据错误", "无法提取视频或上传者信息。"},
+	"nsigExtractionFailed":          {"签名解析失败", "无法提取或解码视频签名。"},
+	"embedOnly":                     {"仅限嵌入播放", "此视频只能通过嵌入式播放器访问。"},
+	"urlUnsupported":                {"链接无效", "提供的链接不受支持或无法识别。"},
+	"unknownUrlType":                {"未知链接类型", "提供的链接使用了不支持的协议。"},
+	"networkNameResolutionFailed":   {"网络错误", "无法解析主机名，请检查网络连接。"},
+	"unableToConnectToProxy":        {"代理连接失败", "无法连接到代理服务器，请检查代理设置。"},
+	"signInRequiredForBotDetection": {"需要登录", "请登录以确认您不是机器人。"},
+	"playlistPrivateOrMissing":      {"播放列表不可用", "此播放列表为私有或已不存在。"},
+	"videoNotFoundOrPrivate":        {"视频不可用", "此视频已被删除或设为私有。"},
+	"channelUnavailable":            {"频道不可用", "提供此内容的频道已无法访问。"},
+	"ffmpegNotFound":                {"未找到 ffmpeg", "转码为 mp3 或 mp4 需要 ffmpeg。"},
+	"ffmpegFailed":                  {"ffmpeg 出错", "FFmpeg 处理时出错。"},
+	"cannotAllocateMemory":          {"内存错误", "FFmpeg 处理视频时内存不足。"},
+	"permissionDenied":              {"权限不足", "应用没有访问此文件或文件夹的权限。"},
+	"noWritePermission":             {"无法写入", "目标路径不可写入。"},
+	"windowsFileMissing":            {"文件不存在", "找不到引用的文件（WinError 2）。"},
+	"blockedGeneric":                {"视频已被屏蔽", "此视频已被屏蔽，无法下载。"},
+	"copyrightClaimed":              {"版权屏蔽", "此视频因版权声明已被屏蔽。"},
+	"notPremieredYet":               {"尚未首播", "此视频需在首播开始后才能观看。"},
+	"livestreamNotStarted":          {"直播尚未开始", "直播尚未开始，请稍后再来。"},
+	"sslVerifyFailed":               {"SSL 验证失败", "无法验证安全连接，请检查证书或系统日期/时间。"},
+	"downloadRetryingFragment":      {"正在重试分片", "分片下载失败，将自动重试。"},
+	"unknown":                       {"未知错误", "处理此项目时发生未知错误。"},
+	"translationNotConfigured":      {"翻译未配置", "没有生成双语字幕：接口地址、模型或 API Key 没有填写，请检查字幕设置。"},
+	"translationSourceMissing":      {"没有可翻译的字幕", "没有生成双语字幕：这个视频没有能下载的原文字幕。"},
+	"translationFailed":             {"字幕翻译失败", "双语字幕生成失败，视频本身已经下载完成。"},
+	"translationPartial":            {"部分字幕未翻译", "有部分字幕没有翻译成功，这些地方只显示原文。"},
+	"rejectedByFilter":              {"已被筛选", "此项目已被您的输入筛选条件排除。"},
+	"input_filter_skipped":          {"已跳过", "这个视频不符合输入筛选条件，已跳过。"},
+}

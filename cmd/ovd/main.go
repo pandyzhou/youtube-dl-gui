@@ -5,13 +5,18 @@ import (
 	"log"
 	"log/slog"
 	"path/filepath"
+	"strings"
 	"sync/atomic"
+	"time"
 
 	"github.com/egoist/mygo"
 	"github.com/egoist/mygo/ui"
+	"github.com/egoist/mygo/ui/netimage"
 
 	"github.com/pandyzhou/youtube-dl-gui/internal/binaries"
 	"github.com/pandyzhou/youtube-dl-gui/internal/core"
+	"github.com/pandyzhou/youtube-dl-gui/internal/formats"
+	"github.com/pandyzhou/youtube-dl-gui/internal/httpx"
 	"github.com/pandyzhou/youtube-dl-gui/internal/secrets"
 	appui "github.com/pandyzhou/youtube-dl-gui/internal/ui"
 )
@@ -60,8 +65,17 @@ func main() {
 		tools.Start()
 	}
 
+	queue := core.NewEngine(c, tools, redraw, nil)
+	defer queue.Close()
+	netimage.SetClient(httpx.Client(c.Settings().Network, 30*time.Second))
+
 	appui.Version = mygo.App.Version()
-	app := appui.New(appui.Deps{Tools: tools})
+	app := appui.New(appui.Deps{
+		Tools:        tools,
+		Queue:        queue,
+		Settings:     c.Settings,
+		ShowInFolder: mygo.Shell.ShowItemInFolder,
+	})
 	mygo.App.OnSecondInstance(func(args []string, workingDir string) {
 		if w := window.Load(); w != nil {
 			w.Restore()
@@ -69,6 +83,7 @@ func main() {
 		}
 	})
 	mygo.App.WhenReady(func() {
+		watchClipboard(c, app, redraw)
 		// Vibrancy puts Mica behind the sidebar on Windows 11 22H2+; opaque elsewhere.
 		window.Store(mygo.NewWindow(mygo.WindowOptions{
 			Title:     "Open Video Downloader",
@@ -98,4 +113,23 @@ func needsToolCheck(c *core.Core, tools *core.Tools) bool {
 		}
 	}
 	return false
+}
+
+// watchClipboard fills the link input with a link copied elsewhere, when
+// the setting is on. It runs on the main thread, where the view's state
+// lives.
+func watchClipboard(c *core.Core, app *appui.App, redraw func()) {
+	last := ""
+	mygo.Clipboard.OnChanged(func() {
+		if !c.Settings().Input.AutoFillClipboard {
+			return
+		}
+		text := strings.TrimSpace(mygo.Clipboard.ReadText())
+		if text == last || !formats.ValidURL(text) {
+			return
+		}
+		last = text
+		app.SetLink(text)
+		redraw()
+	})
 }

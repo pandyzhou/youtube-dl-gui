@@ -4,7 +4,9 @@ package ui
 import (
 	"github.com/egoist/mygo/ui"
 
+	"github.com/pandyzhou/youtube-dl-gui/internal/config"
 	"github.com/pandyzhou/youtube-dl-gui/internal/core"
+	"github.com/pandyzhou/youtube-dl-gui/internal/formats"
 )
 
 // Version is shown in the sidebar; main sets it from mygo.App.Version().
@@ -24,12 +26,6 @@ const (
 	sectionGap    = 16  // between blocks on a page
 )
 
-// Quality presets offered next to the link input. The engine maps each to
-// the closest format a video has (milestone M4).
-var qualityPresets = []string{
-	"最佳画质", "2160p", "1440p", "1080p", "720p", "480p", "仅音频（最佳）", "仅音频 MP3", "自定义…",
-}
-
 type navItem struct {
 	path  string
 	icon  *ui.SVG
@@ -44,16 +40,21 @@ var (
 // Deps are what the window shows and drives. Nil fields are left out, as
 // in tests of a single page.
 type Deps struct {
-	Tools ToolsSource
+	Tools    ToolsSource
+	Queue    QueueSource
+	Settings func() config.Settings
+	// ShowInFolder reveals a downloaded file in Explorer.
+	ShowInFolder func(path string)
 }
 
 // App is the state of the main window.
 type App struct {
 	router *ui.Router
+	deps   Deps
 	tools  ToolsSource
+	queue  QueueSource
+	q      queueState
 
-	link   string
-	preset string
 	// skipInstall shows the app over a failed tool install, so the proxy
 	// can be set; downloads stay unavailable until the tools exist.
 	skipInstall bool
@@ -61,7 +62,16 @@ type App struct {
 
 // New returns the app on its queue page.
 func New(d Deps) *App {
-	return &App{router: ui.NewRouter("/queue"), tools: d.Tools, preset: qualityPresets[0]}
+	a := &App{router: ui.NewRouter("/queue"), deps: d, tools: d.Tools, queue: d.Queue}
+	a.q.presetLabel = formats.PresetByID(a.settings().Input.DefaultPreset).Label
+	return a
+}
+
+func (a *App) settings() config.Settings {
+	if a.deps.Settings == nil {
+		return config.DefaultSettings("")
+	}
+	return a.deps.Settings()
 }
 
 func (a *App) toolsState() core.ToolsState {
@@ -188,28 +198,6 @@ func (a *App) page(c *ui.Context, p palette, title string, trailing func(), cont
 			}
 		})
 		content()
-	})
-}
-
-func (a *App) queuePage(c *ui.Context, p palette) {
-	a.page(c, p, "下载队列", func() {
-		ui.Text(c, "0 个项目").FontSize(12).TextColor(p.muted)
-	}, func() {
-		ui.Row(c).Gap(8).AlignItems(ui.Center).Children(func() {
-			ui.TextInput(c, &a.link).Placeholder("粘贴视频或播放列表链接").Label("链接").
-				Height(controlHeight).Grow(1)
-			ui.Select(c, &a.preset, qualityPresets).Width(150).Height(controlHeight)
-			ui.PrimaryButton(c, "").Height(controlHeight).Padding(0, 16).Children(func() {
-				ui.Icon(c, iconDownload)
-				ui.Text(c, "下载").SingleLine()
-			})
-			ui.Button(c, "加入队列").Height(controlHeight).Padding(0, 16)
-		})
-		ui.Column(c).Grow(1).Center().Gap(8).Padding(0, 0, headerHeight, 0).Children(func() {
-			ui.Icon(c, iconQueue).FontSize(32).TextColor(p.muted)
-			ui.Text(c, "队列为空").FontSize(15).Bold()
-			ui.Text(c, "粘贴链接后点“下载”，或把链接拖到窗口里。").FontSize(13).TextColor(p.muted)
-		})
 	})
 }
 

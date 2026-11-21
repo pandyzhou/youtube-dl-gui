@@ -24,8 +24,58 @@ var (
 	folderSVG []byte
 	//go:embed icons/funnel.svg
 	funnelSVG []byte
+	//go:embed icons/play.svg
+	playSVG []byte
+	//go:embed icons/pause.svg
+	pauseSVG []byte
+	//go:embed icons/rotate-ccw.svg
+	retrySVG []byte
+	//go:embed icons/folder-open.svg
+	folderOpenSVG []byte
+	//go:embed icons/x.svg
+	closeSVG []byte
+	//go:embed icons/trash-2.svg
+	trashSVG []byte
+	//go:embed icons/ellipsis.svg
+	moreSVG []byte
+	//go:embed icons/circle-alert.svg
+	alertSVG []byte
+	//go:embed icons/circle-check.svg
+	checkSVG []byte
+	//go:embed icons/list-checks.svg
+	listChecksSVG []byte
+	//go:embed icons/file-video.svg
+	fileVideoSVG []byte
+	//go:embed icons/arrow-left.svg
+	backSVG []byte
+	//go:embed icons/chevron-down.svg
+	chevronSVG []byte
+	//go:embed icons/image.svg
+	imageSVG []byte
 
-	iconQueue     = ui.MustParseSVG(queueSVG)
+	iconQueue      = ui.MustParseSVG(queueSVG)
+	iconSettings   = ui.MustParseSVG(settingsSVG)
+	iconInfo       = ui.MustParseSVG(infoSVG)
+	iconDownload   = ui.MustParseSVG(downloadSVG)
+	iconLink       = ui.MustParseSVG(linkSVG)
+	iconClipboard  = ui.MustParseSVG(clipboardSVG)
+	iconFolder     = ui.MustParseSVG(folderSVG)
+	iconFunnel     = ui.MustParseSVG(funnelSVG)
+	iconPlay       = ui.MustParseSVG(playSVG)
+	iconPause      = ui.MustParseSVG(pauseSVG)
+	iconRetry      = ui.MustParseSVG(retrySVG)
+	iconFolderOpen = ui.MustParseSVG(folderOpenSVG)
+	iconClose      = ui.MustParseSVG(closeSVG)
+	iconTrash      = ui.MustParseSVG(trashSVG)
+	iconMore       = ui.MustParseSVG(moreSVG)
+	iconAlert      = ui.MustParseSVG(alertSVG)
+	iconCheck      = ui.MustParseSVG(checkSVG)
+	iconListChecks = ui.MustParseSVG(listChecksSVG)
+	iconFileVideo  = ui.MustParseSVG(fileVideoSVG)
+	iconBack       = ui.MustParseSVG(backSVG)
+	iconChevron    = ui.MustParseSVG(chevronSVG)
+	iconImage      = ui.MustParseSVG(imageSVG)
+)
 	iconSettings  = ui.MustParseSVG(settingsSVG)
 	iconInfo      = ui.MustParseSVG(infoSVG)
 	iconDownload  = ui.MustParseSVG(downloadSVG)

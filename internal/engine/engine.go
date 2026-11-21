@@ -305,8 +305,8 @@ func (j *job) cancelAll() {
 }
 
 // SelectPlaylist takes the chosen videos of a playlist (no rows: all) and
-// fetches their information.
-func (e *Engine) SelectPlaylist(jobID string, rows []formats.SelectionRow) error {
+// fetches their information; start downloads them once it is in.
+func (e *Engine) SelectPlaylist(jobID string, rows []formats.SelectionRow, start bool) error {
 	e.mu.Lock()
 	j := e.find(jobID)
 	if j == nil || j.phase != StatusSelecting {
@@ -317,6 +317,7 @@ func (e *Engine) SelectPlaylist(jobID string, rows []formats.SelectionRow) error
 		e.mu.Unlock()
 		return errors.New("没有选中任何视频")
 	}
+	j.autoStart = j.autoStart || start
 	after := e.expandLocked(j, rows)
 	e.mu.Unlock()
 	if after != nil {

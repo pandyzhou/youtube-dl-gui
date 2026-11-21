@@ -1,6 +1,7 @@
 package formats
 
 import (
+	"fmt"
 	"math"
 	"net/url"
 	"regexp"
@@ -105,6 +106,41 @@ func (r SelectionRow) Valid() bool {
 		return r.Start != 0 && r.End != 0
 	}
 	return true
+}
+
+// ParseSelection reads a typed selection: positions and ranges separated
+// by commas or spaces, as "1-10, 15, -3:-1". Ranges use ":" or, between
+// positive numbers, "-"; negative positions count from the end.
+func ParseSelection(text string) ([]SelectionRow, error) {
+	var rows []SelectionRow
+	fields := strings.FieldsFunc(text, func(r rune) bool {
+		return r == ',' || r == '，' || r == '、' || r == ' ' || r == '\t' || r == '\n'
+	})
+	for _, f := range fields {
+		var a, b string
+		var isRange bool
+		if x, y, ok := strings.Cut(f, ":"); ok {
+			a, b, isRange = x, y, true
+		} else if i := strings.Index(f[1:], "-"); i >= 0 {
+			a, b, isRange = f[:i+1], f[i+2:], true
+		} else {
+			a = f
+		}
+		start, err := strconv.Atoi(a)
+		if err != nil || start == 0 {
+			return nil, fmt.Errorf("无法识别“%s”", f)
+		}
+		if !isRange {
+			rows = append(rows, SelectionRow{Index: start})
+			continue
+		}
+		end, err := strconv.Atoi(b)
+		if err != nil || end == 0 {
+			return nil, fmt.Errorf("无法识别“%s”", f)
+		}
+		rows = append(rows, SelectionRow{Range: true, Start: start, End: end})
+	}
+	return rows, nil
 }
 
 // PlaylistItemsSpec is yt-dlp's -I value for rows ("1,3:5,-2:-1"), or ""

@@ -166,3 +166,22 @@ func TestParseURLs(t *testing.T) {
 		t.Error("ValidURL")
 	}
 }
+
+func TestParseSelection(t *testing.T) {
+	rows, err := ParseSelection("1-10, 15，-3:-1  4:2")
+	want := []SelectionRow{{Range: true, Start: 1, End: 10}, {Index: 15}, {Range: true, Start: -3, End: -1}, {Range: true, Start: 4, End: 2}}
+	if err != nil || !reflect.DeepEqual(rows, want) {
+		t.Errorf("rows %+v err %v", rows, err)
+	}
+	if rows, err := ParseSelection("-2"); err != nil || !reflect.DeepEqual(rows, []SelectionRow{{Index: -2}}) {
+		t.Errorf("negative single %+v %v", rows, err)
+	}
+	for _, bad := range []string{"a", "0", "1-", "3:x"} {
+		if _, err := ParseSelection(bad); err == nil {
+			t.Errorf("%q accepted", bad)
+		}
+	}
+	if rows, err := ParseSelection("  "); err != nil || len(rows) != 0 {
+		t.Errorf("blank %+v %v", rows, err)
+	}
+}

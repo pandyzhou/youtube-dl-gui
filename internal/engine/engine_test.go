@@ -333,10 +333,10 @@ func TestPlaylistSelectionAndSplit(t *testing.T) {
 	if j.Title != "List PL" || len(j.Playlist.Entries) != 5 {
 		t.Fatalf("playlist %+v", j)
 	}
-	if err := h.e.SelectPlaylist(id, []formats.SelectionRow{{Index: 9}}); err == nil {
+	if err := h.e.SelectPlaylist(id, []formats.SelectionRow{{Index: 9}}, false); err == nil {
 		t.Error("empty selection accepted")
 	}
-	if err := h.e.SelectPlaylist(id, []formats.SelectionRow{{Index: 4}, {Index: 2}}); err != nil {
+	if err := h.e.SelectPlaylist(id, []formats.SelectionRow{{Index: 4}, {Index: 2}}, false); err != nil {
 		t.Fatal(err)
 	}
 	jobs := h.wait("split", func(jobs []JobView) bool {
