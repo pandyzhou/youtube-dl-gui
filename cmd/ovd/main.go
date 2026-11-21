@@ -14,6 +14,7 @@ import (
 	"github.com/egoist/mygo/ui/netimage"
 
 	"github.com/pandyzhou/youtube-dl-gui/internal/binaries"
+	"github.com/pandyzhou/youtube-dl-gui/internal/config"
 	"github.com/pandyzhou/youtube-dl-gui/internal/core"
 	"github.com/pandyzhou/youtube-dl-gui/internal/formats"
 	"github.com/pandyzhou/youtube-dl-gui/internal/httpx"
@@ -71,10 +72,48 @@ func main() {
 
 	appui.Version = mygo.App.Version()
 	app := appui.New(appui.Deps{
-		Tools:        tools,
-		Queue:        queue,
-		Settings:     c.Settings,
+		Tools:       tools,
+		Queue:       queue,
+		Settings:    c.Settings,
+		Preferences: c.Preferences,
+		UpdateSettings: func(change func(*config.Settings)) error {
+			err := c.UpdateSettings(change)
+			s := c.Settings()
+			queue.SetConcurrency(s.Performance.MaxConcurrency)
+			netimage.SetClient(httpx.Client(s.Network, 30*time.Second))
+			redraw()
+			return err
+		},
+		UpdatePreferences: c.UpdatePreferences,
+		GetSecret: func(key string) string {
+			v, err := c.Secrets.Get(key)
+			if err != nil {
+				slog.Warn("read secret", "key", key, "err", err)
+			}
+			return v
+		},
+		SetSecret: func(key, value string) error {
+			if value == "" {
+				return c.Secrets.Delete(key)
+			}
+			return c.Secrets.Set(key, value)
+		},
 		ShowInFolder: mygo.Shell.ShowItemInFolder,
+		PickPath: func(title, current string, folder bool, done func(string)) {
+			go func() {
+				paths, err := mygo.Dialog.Open(mygo.OpenDialogOptions{
+					Parent: window.Load(), Title: title, DefaultPath: current, Directory: folder,
+				})
+				path := ""
+				if err == nil && len(paths) > 0 {
+					path = paths[0]
+				}
+				mygo.RunOnMain(func() {
+					done(path)
+					redraw()
+				})
+			}()
+		},
 	})
 	mygo.App.OnSecondInstance(func(args []string, workingDir string) {
 		if w := window.Load(); w != nil {

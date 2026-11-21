@@ -40,11 +40,19 @@ var (
 // Deps are what the window shows and drives. Nil fields are left out, as
 // in tests of a single page.
 type Deps struct {
-	Tools    ToolsSource
-	Queue    QueueSource
-	Settings func() config.Settings
+	Tools             ToolsSource
+	Queue             QueueSource
+	Settings          func() config.Settings
+	Preferences       func() config.Preferences
+	UpdateSettings    func(change func(*config.Settings)) error
+	UpdatePreferences func(change func(*config.Preferences)) error
+	GetSecret         func(key string) string
+	SetSecret         func(key, value string) error
 	// ShowInFolder reveals a downloaded file in Explorer.
 	ShowInFolder func(path string)
+	// PickPath asks for a folder (or a file) and calls done on the main
+	// thread with it, or "" when canceled.
+	PickPath func(title, current string, folder bool, done func(path string))
 }
 
 // App is the state of the main window.
@@ -54,6 +62,7 @@ type App struct {
 	tools  ToolsSource
 	queue  QueueSource
 	q      queueState
+	s      settingsState
 
 	// skipInstall shows the app over a failed tool install, so the proxy
 	// can be set; downloads stay unavailable until the tools exist.
@@ -83,7 +92,7 @@ func (a *App) toolsState() core.ToolsState {
 
 // View builds the main window.
 func (a *App) View(c *ui.Context) {
-	p := applyTheme(c)
+	p, forced := applyTheme(c, a.settings().Appearance.Theme)
 	// Over the window material (Mica on Windows 11) the root stays clear so
 	// the sidebar shows it; the content draws its own opaque background.
 	tools := a.toolsState()
@@ -91,13 +100,17 @@ func (a *App) View(c *ui.Context) {
 		a.installView(c, p, tools)
 		return
 	}
-	if c.Vibrancy() {
+	vibrancy := c.Vibrancy() && !forced
+	if vibrancy {
 		c.Root().Background(ui.Transparent)
 	}
 	ui.Row(c).Fill().AlignItems(ui.Stretch).Children(func() {
-		a.sidebar(c, p, tools)
+		a.sidebar(c, p, tools, vibrancy)
 		ui.Column(c).Grow(1).AlignItems(ui.Stretch).Background(p.content).Children(func() {
 			a.router.View(c, func(r *ui.Route) {
+				if !r.Match("/settings") {
+					a.s.loaded = false // read the settings again when it opens
+				}
 				switch {
 				case r.Match("/queue"):
 					r.Title("下载队列")
@@ -116,10 +129,10 @@ func (a *App) View(c *ui.Context) {
 	})
 }
 
-func (a *App) sidebar(c *ui.Context, p palette, tools core.ToolsState) {
+func (a *App) sidebar(c *ui.Context, p palette, tools core.ToolsState, vibrancy bool) {
 	col := ui.Column(c).Width(sidebarWidth).AlignItems(ui.Stretch).
 		Padding(gridTop, sidebarPadX, 14, sidebarPadX).Gap(2)
-	if !c.Vibrancy() {
+	if !vibrancy {
 		col.Background(p.sidebar)
 	}
 	col.Children(func() {
@@ -198,14 +211,6 @@ func (a *App) page(c *ui.Context, p palette, title string, trailing func(), cont
 			}
 		})
 		content()
-	})
-}
-
-func (a *App) settingsPage(c *ui.Context, p palette) {
-	a.page(c, p, "设置", nil, func() {
-		a.card(c, p, func() {
-			ui.Text(c, "设置页面将在后续版本中完成。").TextColor(p.muted)
-		})
 	})
 }
 

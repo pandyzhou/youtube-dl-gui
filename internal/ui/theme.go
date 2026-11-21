@@ -44,12 +44,19 @@ type palette struct {
 	selected ui.Color // selected rows and items
 }
 
-// applyTheme sets the window's theme for this frame, following the
-// system's light or dark appearance, and returns the extra colors.
-func applyTheme(c *ui.Context) palette {
+// applyTheme sets the window's theme for this frame: the system's light or
+// dark look, or the one the appearance setting forces. forced reports a
+// look other than the system's, over which the window material (tinted
+// for the system's look) must not show.
+func applyTheme(c *ui.Context, mode string) (p palette, forced bool) {
 	base := c.Theme()
+	switch {
+	case mode == "dark" && !base.Dark:
+		base, forced = ui.DarkTheme(), true
+	case mode == "light" && base.Dark:
+		base, forced = ui.LightTheme(), true
+	}
 	var t ui.Theme
-	var p palette
 	if base.Dark {
 		t = *base.WithAccent(darkAccent)
 		t.Background, t.Surface, t.Border = darkContent, darkSurface, darkBorder
@@ -70,5 +77,5 @@ func applyTheme(c *ui.Context) palette {
 	t.Font = fontFamilies
 	t.Radius = 6
 	c.SetTheme(&t)
-	return p
+	return p, forced
 }
