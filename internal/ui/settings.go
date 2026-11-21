@@ -454,6 +454,7 @@ func (a *App) settingRows(c *ui.Context, p palette) []settingRow {
 		{subtitles, "AI 双语字幕", "", "翻译 双语", toggle(c, "AI 双语字幕 ", &s.Translation.Enabled), false},
 		{subtitles, "接口地址", "OpenAI 兼容接口的地址。", "翻译 api url", textField(c, "接口地址", &s.Translation.BaseURL, "https://api.openai.com/v1", 300), false},
 		{subtitles, "模型", "可以手动填写，或从接口获取可用的模型；“测试”会用当前设置翻译一句话。", "翻译 model 模型 获取", a.modelField(c, p), true},
+		{subtitles, "同时翻译的请求数", "模型较慢时调大可以加快长视频的翻译；接口限制并发时调小。", "翻译 并发 速度 请求", number(c, "同时翻译的请求数", &s.Translation.Concurrency, 1, 32), false},
 		{subtitles, "思考强度", "推理模型思考得越深，翻译越慢、费用越高。模型不支持时请选“默认”。", "翻译 思考 推理 reasoning effort", choice(c, "思考强度", &s.Translation.ReasoningEffort, []string{"", "none", "minimal", "low", "medium", "high"}, []string{"默认", "关闭思考", "最低", "低", "中", "高"}, 150), false},
 		{subtitles, "目标语言", "翻译成的语言。", "翻译 language", textField(c, "目标语言", &s.Translation.TargetLanguage, "简体中文", 200), false},
 		{subtitles, "高质量模式", "翻译前先让 AI 通读全部字幕，整理出主题和术语表，人名和专有名词更准、前后一致。每个视频多一次请求。", "翻译 高质量 术语 质量", toggle(c, "高质量模式", &s.Translation.HighQuality), false},

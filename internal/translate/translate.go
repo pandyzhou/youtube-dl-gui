@@ -46,6 +46,7 @@ const (
 	transcriptChars = 30000
 	maxTerms        = 20
 	concurrency     = 6
+	maxConcurrency  = 32
 	maxAttempts     = 3
 	// DefaultTargetLanguage is used when the setting is empty.
 	DefaultTargetLanguage = "简体中文"
@@ -553,7 +554,11 @@ func translateCues(ctx context.Context, env Env, c chat, texts []string, r engin
 		c.logf("Going on from the last run: %d of %d batches already translated", done, len(batches))
 		r.Progress(float64(done) / float64(len(batches)) * 100)
 	}
-	sem := make(chan struct{}, concurrency)
+	n := env.Settings.Translation.Concurrency
+	if n <= 0 {
+		n = concurrency
+	}
+	sem := make(chan struct{}, min(n, maxConcurrency))
 	for _, b := range batches {
 		if _, ok := cp.batch(b.start, len(b.lines)); ok {
 			continue

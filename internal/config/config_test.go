@@ -98,7 +98,7 @@ func TestImportLegacy(t *testing.T) {
 		{"subtitle languages", s.Subtitles.Languages, []string{"en", "zh-cn"}},
 		{"json becomes json3", s.Subtitles.FormatPreference, []string{"json3", "srt"}},
 		{"embed", s.Subtitles.EmbedSubtitles, false},
-		{"translation", s.Translation, TranslationSettings{true, "https://api.deepseek.com", "deepseek-chat", "简体中文", false, ""}},
+		{"translation", s.Translation, TranslationSettings{true, "https://api.deepseek.com", "deepseek-chat", "简体中文", false, "", 6}},
 		{"update app", s.Update.UpdateApp, false},
 		{"tray", s.System.TrayEnabled, true},
 		{"close behavior", s.System.CloseBehavior, CloseHide},
