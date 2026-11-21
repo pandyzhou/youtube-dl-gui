@@ -16,4 +16,5 @@ Builds, vet, gofmt and tests run on GitHub Actions only; do not run go locally.
 Use `rg` for searching the codebase; avoid recursive `grep` or `ls` commands.
 
 ## Commit style
-Write commit messages in the form `type: summary`, e.g. `fix: update progress bar logic`.
+Write commit messages in the form `type: 中文摘要`, e.g. `fix: 修正进度条显示`. The type stays English;
+the feat, fix and perf summaries become the release notes, so write them for users.
