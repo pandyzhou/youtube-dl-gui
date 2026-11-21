@@ -77,7 +77,7 @@ func (a *App) saveSettings() {
 		}
 		a.s.saved = draft
 	}
-	if a.s.prefs != a.s.savedP && a.deps.UpdatePreferences != nil {
+	if a.s.prefs.Paths != a.s.savedP.Paths && a.deps.UpdatePreferences != nil {
 		paths := a.s.prefs.Paths
 		if err := a.deps.UpdatePreferences(func(p *config.Preferences) { p.Paths = paths }); err != nil {
 			a.s.err = "保存设置失败：" + err.Error()
