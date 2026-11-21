@@ -244,7 +244,7 @@ func WriteASS(cues []Cue, translations []string, width, height int) string {
 		playX = int(float64(width)/float64(height)*1440 + 0.5)
 	}
 	var b strings.Builder
-	b.WriteString("﻿[Script Info]\nScriptType: v4.00+\n")
+	b.WriteString("\ufeff[Script Info]\nScriptType: v4.00+\n")
 	fmt.Fprintf(&b, "PlayResX: %d\nPlayResY: 1440\nWrapStyle: 0\nScaledBorderAndShadow: yes\nYCbCr Matrix: TV.709\n\n", playX)
 	b.WriteString("[V4+ Styles]\nFormat: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, " +
 		"Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, " +
