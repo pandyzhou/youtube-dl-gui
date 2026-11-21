@@ -143,7 +143,7 @@ func TestQueueCardActions(t *testing.T) {
 	var shown string
 	a := New(Deps{Queue: q, ShowInFolder: func(p string) { shown = p }})
 	tt := ui.NewTester(a.View, 1000, 1400)
-	for _, want := range []string{"正在获取信息…", "选择视频…", "46% · 3.4 MB/s · 剩余 1:23", "100% · 合并音视频", "61% · 2/4 · 3.4 MB/s", "30% · 已暂停", "拒绝访问：您没有权限访问此资源（HTTP 403）。", "已完成", "9 个项目"} {
+	for _, want := range []string{"正在获取信息…", "选择视频…", "46% · 3.4 MB/s · 剩余 1:23", "100% · 合并音视频", "62% · 2/4 · 3.4 MB/s", "30% · 已暂停", "拒绝访问：您没有权限访问此资源（HTTP 403）。", "已完成", "9 个项目"} {
 		if !tt.HasText(want) {
 			t.Errorf("%q missing", want)
 		}

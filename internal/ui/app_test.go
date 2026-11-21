@@ -79,7 +79,7 @@ func TestFormatBytes(t *testing.T) {
 }
 
 func TestNavigation(t *testing.T) {
-	a := New(Deps{})
+	a := New(Deps{Queue: &fakeQueue{}})
 	tt := ui.NewTester(a.View, 1000, 760)
 	if !tt.HasText("队列为空") {
 		t.Fatalf("queue page not shown, texts %q", tt.Texts())
@@ -108,7 +108,7 @@ func TestScreenshots(t *testing.T) {
 			scheme = "dark"
 		}
 		for _, page := range []string{"/queue", "/settings", "/about"} {
-			a := New(Deps{})
+			a := New(Deps{Queue: &fakeQueue{}})
 			a.router.Replace(page)
 			tt := ui.NewTesterWith(a.View, 1000, 760, ui.TesterOptions{Dark: dark})
 			tt.Frame()
