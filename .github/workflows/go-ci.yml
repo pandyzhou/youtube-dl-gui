@@ -24,8 +24,7 @@ permissions:
   contents: read
 
 env:
-  # Until go.sum is committed, let the go command record module hashes itself.
-  GOFLAGS: -mod=mod
+  GOFLAGS: -mod=readonly
 
 jobs:
   test:
