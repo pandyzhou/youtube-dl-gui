@@ -188,7 +188,7 @@ func chatConfig(env Env) (chat, error) {
 	if target == "" {
 		target = DefaultTargetLanguage
 	}
-	return chat{endpoint, model, strings.TrimSpace(env.APIKey), target}, nil
+	return chat{endpoint: endpoint, model: model, apiKey: strings.TrimSpace(env.APIKey), target: target}, nil
 }
 
 // videoContext describes a video for the model: its title, channel and
