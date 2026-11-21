@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/pandyzhou/youtube-dl-gui/internal/config"
+	"github.com/pandyzhou/lumadl/internal/config"
 )
 
 // Ported from src-tauri/src/runners/ytdlp_args/tests.rs and the tests in

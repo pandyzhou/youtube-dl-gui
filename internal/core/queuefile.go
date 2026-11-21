@@ -8,7 +8,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/pandyzhou/youtube-dl-gui/internal/engine"
+	"github.com/pandyzhou/lumadl/internal/engine"
 )
 
 // QueueFile keeps the download queue between runs.

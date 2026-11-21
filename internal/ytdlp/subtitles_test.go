@@ -3,7 +3,7 @@ package ytdlp
 import (
 	"testing"
 
-	"github.com/pandyzhou/youtube-dl-gui/internal/config"
+	"github.com/pandyzhou/lumadl/internal/config"
 )
 
 // Ported from the subtitle tests in src-tauri/src/runners/ytdlp_runner.rs.

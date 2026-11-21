@@ -8,7 +8,7 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/pandyzhou/youtube-dl-gui/internal/proc"
+	"github.com/pandyzhou/lumadl/internal/proc"
 )
 
 // videoExts are the files "为已有视频补字幕" takes.

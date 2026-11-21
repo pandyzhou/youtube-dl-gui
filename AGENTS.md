@@ -1,8 +1,8 @@
 # AGENTS
 
 ## Overview
-Open Video Downloader is a Go app with a native MyGo UI (Windows x64, Simplified Chinese).
-The entry point is `cmd/ovd`; everything else lives in `internal/`:
+LumaDL (流光下载) is a Go app with a native MyGo UI (Windows x64, Simplified Chinese).
+The entry point is `cmd/lumadl`; everything else lives in `internal/`:
 `config` (settings, legacy import), `ytdlp` (arguments, parsing), `binaries` (tool installs),
 `engine` (queue), `formats` (presets, inputs), `translate` (AI bilingual subtitles), `ui` (interface).
 

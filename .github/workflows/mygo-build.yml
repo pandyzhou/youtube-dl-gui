@@ -1,6 +1,6 @@
 name: MyGo build (Windows)
 
-# Builds Open Video Downloader for Windows x64 on Linux (MyGo needs no cgo,
+# Builds LumaDL (流光下载) for Windows x64 on Linux (MyGo needs no cgo,
 # NSIS makes the installer). Other branches get a preview artifact; main
 # publishes the next 4.0.N release, signed for auto-updates, with the
 # installer, the portable exe and the update files.
@@ -116,12 +116,12 @@ jobs:
 
           Windows x64 · 简体中文。
 
-          - 安装包：`open-video-downloader-setup-*-amd64.exe`
-          - 免安装版：`open-video-downloader-*-portable.exe`
+          - 安装包：`lumadl-setup-*-amd64.exe`
+          - 免安装版：`lumadl-*-portable.exe`
 
           `update-windows-amd64.json` 和 `.tar.gz` 是自动更新用的，不需要下载。
 
-          3.x（Tauri 版）不会自动更新到 4.x，请手动安装一次；第一次启动会导入旧版设置（登录信息和 API Key 需要重新填写）。之后的版本会自动更新。
+          从 Open Video Downloader 换过来：装好后第一次启动会自动搬过设置、下载队列、工具和 API Key，再卸载旧版即可。
           EOF
           gh release create "$tag" --draft --verify-tag --title "$tag" --notes-file notes.md
 
@@ -148,11 +148,11 @@ jobs:
           tag="v$VERSION"
           # Keep the installer, the portable exe and the update feed; drop
           # the install script and checksums MyGo adds for command lines.
-          cp "build/windows-amd64/Open Video Downloader.exe" "open-video-downloader-$VERSION-portable.exe"
-          gh release upload "$tag" "open-video-downloader-$VERSION-portable.exe" --clobber
+          cp "build/windows-amd64/LumaDL.exe" "lumadl-$VERSION-portable.exe"
+          gh release upload "$tag" "lumadl-$VERSION-portable.exe" --clobber
           for name in $(gh release view "$tag" --json assets -q '.assets[].name'); do
             case "$name" in
-              install.ps1|install.sh|SHA256SUMS|*.delta|Open.Video.Downloader.exe) gh release delete-asset "$tag" "$name" --yes ;;
+              install.ps1|install.sh|SHA256SUMS|*.delta|LumaDL.exe) gh release delete-asset "$tag" "$name" --yes ;;
             esac
           done
           previous="$(gh release view --json tagName -q .tagName || true)"

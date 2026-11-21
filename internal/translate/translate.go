@@ -21,10 +21,10 @@ import (
 	"sync"
 	"time"
 
-	"github.com/pandyzhou/youtube-dl-gui/internal/config"
-	"github.com/pandyzhou/youtube-dl-gui/internal/engine"
-	"github.com/pandyzhou/youtube-dl-gui/internal/proc"
-	"github.com/pandyzhou/youtube-dl-gui/internal/ytdlp"
+	"github.com/pandyzhou/lumadl/internal/config"
+	"github.com/pandyzhou/lumadl/internal/engine"
+	"github.com/pandyzhou/lumadl/internal/proc"
+	"github.com/pandyzhou/lumadl/internal/ytdlp"
 )
 
 // Tuning.

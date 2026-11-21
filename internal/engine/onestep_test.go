@@ -8,8 +8,8 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/pandyzhou/youtube-dl-gui/internal/config"
-	"github.com/pandyzhou/youtube-dl-gui/internal/proc"
+	"github.com/pandyzhou/lumadl/internal/config"
+	"github.com/pandyzhou/lumadl/internal/proc"
 )
 
 // oneStepYtdlp answers the format selection and writes the parts of a

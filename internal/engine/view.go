@@ -1,6 +1,6 @@
 package engine
 
-import "github.com/pandyzhou/youtube-dl-gui/internal/ytdlp"
+import "github.com/pandyzhou/lumadl/internal/ytdlp"
 
 // status is a job's status: its phase until it is ready, then what its
 // videos are doing, the most urgent first.

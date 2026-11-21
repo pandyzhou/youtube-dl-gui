@@ -6,8 +6,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/pandyzhou/youtube-dl-gui/internal/binaries"
-	"github.com/pandyzhou/youtube-dl-gui/internal/httpx"
+	"github.com/pandyzhou/lumadl/internal/binaries"
+	"github.com/pandyzhou/lumadl/internal/httpx"
 )
 
 // ToolsPhase is where the tool check is.

@@ -10,11 +10,11 @@ import (
 	"github.com/egoist/mygo/ui"
 	"github.com/egoist/mygo/ui/netimage"
 
-	"github.com/pandyzhou/youtube-dl-gui/internal/config"
-	"github.com/pandyzhou/youtube-dl-gui/internal/core"
-	"github.com/pandyzhou/youtube-dl-gui/internal/engine"
-	"github.com/pandyzhou/youtube-dl-gui/internal/formats"
-	"github.com/pandyzhou/youtube-dl-gui/internal/ytdlp"
+	"github.com/pandyzhou/lumadl/internal/config"
+	"github.com/pandyzhou/lumadl/internal/core"
+	"github.com/pandyzhou/lumadl/internal/engine"
+	"github.com/pandyzhou/lumadl/internal/formats"
+	"github.com/pandyzhou/lumadl/internal/ytdlp"
 )
 
 // QueueSource is the engine as the queue page drives it.

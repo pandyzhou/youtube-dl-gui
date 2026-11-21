@@ -1,4 +1,4 @@
-// Command ovd is Open Video Downloader, a yt-dlp front end with a native UI.
+// Command lumadl is LumaDL (流光下载), a yt-dlp front end with a native UI.
 package main
 
 import (
@@ -16,15 +16,15 @@ import (
 	"github.com/egoist/mygo/ui"
 	"github.com/egoist/mygo/ui/netimage"
 
-	"github.com/pandyzhou/youtube-dl-gui/internal/binaries"
-	"github.com/pandyzhou/youtube-dl-gui/internal/config"
-	"github.com/pandyzhou/youtube-dl-gui/internal/core"
-	"github.com/pandyzhou/youtube-dl-gui/internal/engine"
-	"github.com/pandyzhou/youtube-dl-gui/internal/formats"
-	"github.com/pandyzhou/youtube-dl-gui/internal/httpx"
-	"github.com/pandyzhou/youtube-dl-gui/internal/secrets"
-	"github.com/pandyzhou/youtube-dl-gui/internal/translate"
-	appui "github.com/pandyzhou/youtube-dl-gui/internal/ui"
+	"github.com/pandyzhou/lumadl/internal/binaries"
+	"github.com/pandyzhou/lumadl/internal/config"
+	"github.com/pandyzhou/lumadl/internal/core"
+	"github.com/pandyzhou/lumadl/internal/engine"
+	"github.com/pandyzhou/lumadl/internal/formats"
+	"github.com/pandyzhou/lumadl/internal/httpx"
+	"github.com/pandyzhou/lumadl/internal/secrets"
+	"github.com/pandyzhou/lumadl/internal/translate"
+	appui "github.com/pandyzhou/lumadl/internal/ui"
 )
 
 // resolveDirs asks MyGo for the app's folders: %AppData%\<name> for data,
@@ -58,10 +58,15 @@ func main() {
 	mygo.Use(native.New(updater.Options{Language: "zh-Hans"}))
 
 	dirs := resolveDirs()
+	// The app was Open Video Downloader before: bring its data along.
+	moved, moveErr := core.MoveOldData(dirs.Data)
 	if closer, err := core.SetupLogging(dirs.Logs); err == nil {
 		defer closer.Close()
 	}
 	slog.Info("starting", "version", mygo.App.Version())
+	if moved {
+		slog.Info("moved the data of the previous name", "from", core.PreviousName, "err", moveErr)
+	}
 	c := core.Open(dirs, secrets.System{})
 
 	// Background goroutines redraw the window through it once it exists.
@@ -179,7 +184,7 @@ func main() {
 		hidden := mygo.App.WasOpenedAtLogin() && s.System.AutoStartMinimised && s.System.TrayEnabled
 		// Vibrancy puts Mica behind the sidebar on Windows 11 22H2+; opaque elsewhere.
 		win := mygo.NewWindow(mygo.WindowOptions{
-			Title:     "Open Video Downloader",
+			Title:     "流光下载",
 			Width:     1000,
 			Height:    760,
 			MinWidth:  760,

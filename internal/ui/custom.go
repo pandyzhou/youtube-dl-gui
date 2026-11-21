@@ -6,9 +6,9 @@ import (
 
 	"github.com/egoist/mygo/ui"
 
-	"github.com/pandyzhou/youtube-dl-gui/internal/engine"
-	"github.com/pandyzhou/youtube-dl-gui/internal/formats"
-	"github.com/pandyzhou/youtube-dl-gui/internal/ytdlp"
+	"github.com/pandyzhou/lumadl/internal/engine"
+	"github.com/pandyzhou/lumadl/internal/formats"
+	"github.com/pandyzhou/lumadl/internal/ytdlp"
 )
 
 // formatOffer is what a card's videos offer to choose from: their formats,

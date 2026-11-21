@@ -5,7 +5,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/pandyzhou/youtube-dl-gui/internal/config"
+	"github.com/pandyzhou/lumadl/internal/config"
 )
 
 // FormatArgs returns -f and -S (and -x for audio) for format, biased toward

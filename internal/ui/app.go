@@ -1,4 +1,4 @@
-// Package ui is the native interface of Open Video Downloader.
+// Package ui is the native interface of LumaDL (流光下载).
 package ui
 
 import (
@@ -6,9 +6,9 @@ import (
 
 	"github.com/egoist/mygo/ui"
 
-	"github.com/pandyzhou/youtube-dl-gui/internal/config"
-	"github.com/pandyzhou/youtube-dl-gui/internal/core"
-	"github.com/pandyzhou/youtube-dl-gui/internal/formats"
+	"github.com/pandyzhou/lumadl/internal/config"
+	"github.com/pandyzhou/lumadl/internal/core"
+	"github.com/pandyzhou/lumadl/internal/formats"
 )
 
 // Version is shown in the sidebar; main sets it from mygo.App.Version().
@@ -151,7 +151,7 @@ func (a *App) sidebar(c *ui.Context, p palette, tools core.ToolsState, vibrancy 
 	col.Children(func() {
 		ui.Row(c).Height(headerHeight).AlignItems(ui.Center).Gap(10).Padding(0, rowInset).Children(func() {
 			ui.Image(c, appIcon).Size(22, 22).Fit(ui.Contain)
-			ui.Text(c, "Open Video Downloader").FontSize(13).Bold().SingleLine()
+			ui.Text(c, "流光下载").FontSize(13).Bold().SingleLine()
 		})
 		ui.Box(c).Height(10)
 		for _, item := range mainNav {
@@ -233,7 +233,7 @@ func (a *App) aboutPage(c *ui.Context, p palette) {
 			ui.Row(c).Gap(14).AlignItems(ui.Center).Children(func() {
 				ui.Image(c, appIcon).Size(44, 44).Fit(ui.Contain)
 				ui.Column(c).Gap(4).Children(func() {
-					ui.Text(c, "Open Video Downloader").FontSize(15).Bold()
+					ui.Text(c, "流光下载 LumaDL").FontSize(15).Bold()
 					ui.Text(c, "版本 "+Version).FontSize(13).TextColor(p.muted)
 				})
 			})

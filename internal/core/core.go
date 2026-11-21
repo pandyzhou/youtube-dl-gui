@@ -10,8 +10,8 @@ import (
 	"runtime"
 	"sync"
 
-	"github.com/pandyzhou/youtube-dl-gui/internal/config"
-	"github.com/pandyzhou/youtube-dl-gui/internal/secrets"
+	"github.com/pandyzhou/lumadl/internal/config"
+	"github.com/pandyzhou/lumadl/internal/secrets"
 )
 
 // Dirs are the folders the app uses.

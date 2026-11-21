@@ -9,8 +9,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/pandyzhou/youtube-dl-gui/internal/config"
-	"github.com/pandyzhou/youtube-dl-gui/internal/ytdlp"
+	"github.com/pandyzhou/lumadl/internal/config"
+	"github.com/pandyzhou/lumadl/internal/ytdlp"
 )
 
 // InputFilters converts the input filter settings to yt-dlp's options.

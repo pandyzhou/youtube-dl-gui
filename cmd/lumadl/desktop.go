@@ -9,11 +9,11 @@ import (
 	"github.com/egoist/mygo"
 	"github.com/egoist/mygo/plugins/updater"
 
-	"github.com/pandyzhou/youtube-dl-gui/internal/config"
-	"github.com/pandyzhou/youtube-dl-gui/internal/core"
-	"github.com/pandyzhou/youtube-dl-gui/internal/engine"
-	"github.com/pandyzhou/youtube-dl-gui/internal/formats"
-	appui "github.com/pandyzhou/youtube-dl-gui/internal/ui"
+	"github.com/pandyzhou/lumadl/internal/config"
+	"github.com/pandyzhou/lumadl/internal/core"
+	"github.com/pandyzhou/lumadl/internal/engine"
+	"github.com/pandyzhou/lumadl/internal/formats"
+	appui "github.com/pandyzhou/lumadl/internal/ui"
 )
 
 // desktop ties the app to Windows: the tray icon, global shortcuts,
@@ -44,7 +44,7 @@ func (d *desktop) apply() {
 	s := d.core.Settings()
 	switch {
 	case s.System.TrayEnabled && d.tray == nil:
-		tray, err := mygo.NewTray(mygo.TrayOptions{Icon: appui.AppIconPNG(), ToolTip: "Open Video Downloader", Menu: d.trayMenu()})
+		tray, err := mygo.NewTray(mygo.TrayOptions{Icon: appui.AppIconPNG(), ToolTip: "流光下载", Menu: d.trayMenu()})
 		if err != nil {
 			slog.Warn("tray", "err", err)
 		} else {

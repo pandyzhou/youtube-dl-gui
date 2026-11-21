@@ -6,11 +6,11 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/pandyzhou/youtube-dl-gui/internal/engine"
-	"github.com/pandyzhou/youtube-dl-gui/internal/httpx"
-	"github.com/pandyzhou/youtube-dl-gui/internal/secrets"
-	"github.com/pandyzhou/youtube-dl-gui/internal/translate"
-	"github.com/pandyzhou/youtube-dl-gui/internal/ytdlp"
+	"github.com/pandyzhou/lumadl/internal/engine"
+	"github.com/pandyzhou/lumadl/internal/httpx"
+	"github.com/pandyzhou/lumadl/internal/secrets"
+	"github.com/pandyzhou/lumadl/internal/translate"
+	"github.com/pandyzhou/lumadl/internal/ytdlp"
 )
 
 // AuthSecrets reads the sign-in secrets for yt-dlp; a secret that cannot

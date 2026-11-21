@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/pandyzhou/youtube-dl-gui/internal/config"
+	"github.com/pandyzhou/lumadl/internal/config"
 )
 
 // Client returns a client that uses the configured proxy when it is on and

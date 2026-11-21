@@ -4,7 +4,7 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/pandyzhou/youtube-dl-gui/internal/ytdlp"
+	"github.com/pandyzhou/lumadl/internal/ytdlp"
 )
 
 // What to do with a link that points at a video and a playlist at once

@@ -11,10 +11,10 @@ import (
 	"sync"
 	"time"
 
-	"github.com/pandyzhou/youtube-dl-gui/internal/config"
-	"github.com/pandyzhou/youtube-dl-gui/internal/formats"
-	"github.com/pandyzhou/youtube-dl-gui/internal/proc"
-	"github.com/pandyzhou/youtube-dl-gui/internal/ytdlp"
+	"github.com/pandyzhou/lumadl/internal/config"
+	"github.com/pandyzhou/lumadl/internal/formats"
+	"github.com/pandyzhou/lumadl/internal/proc"
+	"github.com/pandyzhou/lumadl/internal/ytdlp"
 )
 
 // Limits on what a job keeps.
