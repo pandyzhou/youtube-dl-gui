@@ -1,0 +1,71 @@
+name: MyGo build (Windows)
+
+# Builds the MyGo rewrite for Windows x64 on Linux (MyGo needs no cgo, NSIS
+# makes the installer). For now this produces a preview artifact only; the
+# release job is added when the rewrite replaces the Tauri app on main.
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [mygo]
+    paths:
+      - '**.go'
+      - 'go.mod'
+      - 'go.sum'
+      - 'mygo.json'
+      - 'internal/**'
+      - 'cmd/**'
+      - 'resources/**'
+      - '.github/workflows/mygo-build.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: mygo-build-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  windows:
+    runs-on: ubuntu-latest
+    env:
+      GOFLAGS: -mod=mod -tags=mygo_nowebview
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: false
+
+      - name: Go build cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/go-build
+            ~/go/pkg/mod
+          key: go-build-windows-${{ hashFiles('go.mod', 'go.sum') }}
+          restore-keys: go-build-windows-
+
+      - name: Install NSIS
+        run: sudo apt-get update && sudo apt-get install -y nsis
+
+      - name: Stamp preview version
+        run: |
+          version="$(jq -r .version mygo.json)-preview.${GITHUB_RUN_NUMBER}"
+          jq --arg v "$version" '.version = $v' mygo.json > mygo.tmp && mv mygo.tmp mygo.json
+          echo "VERSION=$version" >> "$GITHUB_ENV"
+          echo "Building $version"
+
+      - name: Build
+        run: go tool mygo build -platform windows/amd64
+
+      - name: List output
+        run: ls -la build/windows-amd64 || find build -maxdepth 3
+
+      - name: Upload preview
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: ovd-${{ env.VERSION }}-windows-x64
+          path: build/windows-amd64/
+          if-no-files-found: error

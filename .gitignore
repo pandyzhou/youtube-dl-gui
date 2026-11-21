@@ -30,3 +30,8 @@ licenses/*
 # Tests
 test-results/
 coverage/
+# MyGo rewrite
+/build/
+/.mygo/
+mygo_windows_*.syso
+/screenshots/
