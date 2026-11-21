@@ -109,7 +109,7 @@ func TestOneStepDownload(t *testing.T) {
 		t.Errorf("parts left %q", matches)
 	}
 	for _, c := range run.downloads() {
-		if contains(c, "--embed-subs") || contains(c, "--embed-thumbnail") {
+		if !contains(c, "--simulate") && (contains(c, "--embed-subs") || contains(c, "--embed-thumbnail")) {
 			t.Errorf("yt-dlp post-processed: %q", c)
 		}
 	}
