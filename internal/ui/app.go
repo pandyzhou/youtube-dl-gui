@@ -13,7 +13,7 @@ var Version = "dev"
 const (
 	gridTop       = 16  // top of the first row in the sidebar and the pages
 	headerHeight  = 40  // the brand row and the page title row
-	sidebarWidth  = 220 // sidebar, including its padding
+	sidebarWidth  = 240 // sidebar, including its padding
 	sidebarPadX   = 12  // sidebar side padding
 	rowInset      = 10  // left inset of every sidebar row's content
 	navRowHeight  = 36  // sidebar item height
@@ -111,7 +111,7 @@ func (a *App) navRow(c *ui.Context, p palette, item navItem) {
 	t := c.Theme()
 	chosen := a.router.Path() == item.path
 	c.Key(item.path)
-	row := ui.ButtonBase(c).Height(navRowHeight).AlignItems(ui.Center).Gap(10).
+	row := ui.ButtonBase(c).Height(navRowHeight).Justify(ui.Start).AlignItems(ui.Center).Gap(10).
 		Padding(0, rowInset).Radius(6).Label(item.label)
 	switch {
 	case chosen:
