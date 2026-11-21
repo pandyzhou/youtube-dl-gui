@@ -34,3 +34,17 @@ var (
 	iconFolder    = ui.MustParseSVG(folderSVG)
 	iconFunnel    = ui.MustParseSVG(funnelSVG)
 )
+
+//go:embed icons/app.png
+var appPNG []byte
+
+// appIcon is the app's logo, drawn in the sidebar and the about page.
+var appIcon = mustBitmap(appPNG)
+
+func mustBitmap(data []byte) *ui.Bitmap {
+	bmp, err := ui.DecodeBitmap(data)
+	if err != nil {
+		panic(err)
+	}
+	return bmp
+}
