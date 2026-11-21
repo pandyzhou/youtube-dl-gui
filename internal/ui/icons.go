@@ -76,14 +76,6 @@ var (
 	iconChevron    = ui.MustParseSVG(chevronSVG)
 	iconImage      = ui.MustParseSVG(imageSVG)
 )
-	iconSettings  = ui.MustParseSVG(settingsSVG)
-	iconInfo      = ui.MustParseSVG(infoSVG)
-	iconDownload  = ui.MustParseSVG(downloadSVG)
-	iconLink      = ui.MustParseSVG(linkSVG)
-	iconClipboard = ui.MustParseSVG(clipboardSVG)
-	iconFolder    = ui.MustParseSVG(folderSVG)
-	iconFunnel    = ui.MustParseSVG(funnelSVG)
-)
 
 //go:embed icons/app.png
 var appPNG []byte
