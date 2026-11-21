@@ -68,6 +68,16 @@ jobs:
           echo "VERSION=$version" >> "$GITHUB_ENV"
           echo "Building $version"
 
+      - name: Check the update signing key
+        if: env.RELEASE == 'true'
+        env:
+          MYGO_UPDATER_PRIVATE_KEY: ${{ secrets.MYGO_UPDATER_PRIVATE_KEY }}
+        run: |
+          if [ -z "$MYGO_UPDATER_PRIVATE_KEY" ]; then
+            echo "::error::Set the MYGO_UPDATER_PRIVATE_KEY secret: releases must be signed for auto-updates."
+            exit 1
+          fi
+
       - name: Draft the release
         if: env.RELEASE == 'true'
         env:
