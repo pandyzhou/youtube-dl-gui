@@ -85,9 +85,15 @@ type Deps struct {
 	// translation does. Its problems are warnings on the item; they never
 	// fail the download. Nil does nothing.
 	AfterDownload func(ctx context.Context, d Finished, r Reporter)
-	OnChange      func() // state changed; called at most every Throttle
-	OnEvent       func(Event)
-	Throttle      time.Duration
+	// BeforeDownload, when set with AfterDownload, starts work for an item
+	// as its download starts and runs beside it, such as translating the
+	// subtitles. It may log, warn and report progress, which shows once the
+	// download is done; AfterDownload waits for it and gets its result as
+	// Finished.Early. It is canceled when the download fails or stops.
+	BeforeDownload func(ctx context.Context, s Started, r Reporter) any
+	OnChange       func() // state changed; called at most every Throttle
+	OnEvent        func(Event)
+	Throttle       time.Duration
 }
 
 // Finished describes a completed download for AfterDownload.
@@ -102,6 +108,18 @@ type Finished struct {
 	// SubtitlesOnly is set for a file downloaded before whose subtitles
 	// were asked for: they are made whatever the settings say.
 	SubtitlesOnly bool
+	// Early is what BeforeDownload returned for this download, if it ran.
+	Early any
+}
+
+// Started is an item whose download is starting, for BeforeDownload.
+type Started struct {
+	JobID     string
+	ItemID    string
+	URL       string
+	Title     string
+	TrackType ytdlp.TrackType
+	Video     *ytdlp.Video
 }
 
 // Reporter lets AfterDownload show what it does on the item.

@@ -600,6 +600,10 @@ func (e *Engine) download(ctx context.Context, j *job, it *item) {
 	}
 	e.changed()
 	slog.Info("download", "job", j.id, "item", it.id, "summary", ytdlp.Summarize(args))
+	var early *earlyWork
+	if e.d.BeforeDownload != nil && e.d.AfterDownload != nil {
+		early = e.startEarly(ctx, j, it, track)
+	}
 
 	parser := ytdlp.NewProgressParser(track)
 	code, err := e.d.Runner.Run(ctx, args, func(l proc.Line) {
@@ -634,7 +638,9 @@ func (e *Engine) download(ctx context.Context, j *job, it *item) {
 		e.changed()
 	})
 	if err == nil && code == 0 && e.d.AfterDownload != nil && ctx.Err() == nil {
-		e.afterDownload(ctx, j, it, track)
+		e.afterDownload(ctx, j, it, track, early)
+	} else if early != nil {
+		early.cancel()
 	}
 	e.finishDownload(ctx, j, it, code, err)
 }
@@ -656,14 +662,91 @@ func (e *Engine) subtitlesOnly(ctx context.Context, j *job, it *item) {
 		return
 	}
 	if e.d.AfterDownload != nil {
-		e.afterDownload(ctx, j, it, ytdlp.TrackBoth)
+		e.afterDownload(ctx, j, it, ytdlp.TrackBoth, nil)
 	}
 	e.finishDownload(ctx, j, it, 0, nil)
 }
 
 // afterDownload runs the AfterDownload step, showing its stage, progress,
 // log and warnings on the item.
-func (e *Engine) afterDownload(ctx context.Context, j *job, it *item, track ytdlp.TrackType) {
+// earlyWork is BeforeDownload running beside a download.
+type earlyWork struct {
+	cancel context.CancelFunc
+	done   chan struct{}
+	result any
+
+	mu      sync.Mutex
+	shown   bool // the download is done: progress shows on the item
+	percent float64
+}
+
+// startEarly runs BeforeDownload for an item whose download starts.
+func (e *Engine) startEarly(ctx context.Context, j *job, it *item, track ytdlp.TrackType) *earlyWork {
+	w := &earlyWork{done: make(chan struct{})}
+	var wctx context.Context
+	wctx, w.cancel = context.WithCancel(ctx)
+	e.mu.Lock()
+	s := Started{JobID: j.id, ItemID: it.id, URL: it.url, TrackType: track, Video: it.video}
+	if it.video != nil {
+		s.Title = it.video.Title
+	}
+	e.mu.Unlock()
+	r := e.reporter(j, it)
+	r.Stage = func(ytdlp.Stage) {}
+	show := r.Progress
+	r.Progress = func(p float64) {
+		w.mu.Lock()
+		w.percent = p
+		shown := w.shown
+		w.mu.Unlock()
+		if shown {
+			show(p)
+		}
+	}
+	go func() {
+		defer close(w.done)
+		w.result = e.d.BeforeDownload(wctx, s, r)
+	}()
+	return w
+}
+
+// reporter lets after-download work show on an item.
+func (e *Engine) reporter(j *job, it *item) Reporter {
+	update := func(fn func()) {
+		e.mu.Lock()
+		fn()
+		e.mu.Unlock()
+		e.changed()
+	}
+	return Reporter{
+		Stage:    func(s ytdlp.Stage) { update(func() { it.stage, it.percent = s, 0 }) },
+		Progress: func(p float64) { update(func() { it.percent = p }) },
+		Log:      func(line string) { e.appendLog(j, line) },
+		Warn: func(code, message string) {
+			d := ytdlp.Diagnostic{Level: ytdlp.LevelWarning, Code: code, Message: message, Raw: message}
+			update(func() { it.diagnostics = appendDiagnostics(it.diagnostics, d) })
+		},
+	}
+}
+
+func (e *Engine) afterDownload(ctx context.Context, j *job, it *item, track ytdlp.TrackType, early *earlyWork) {
+	r := e.reporter(j, it)
+	if early != nil {
+		// Show the early work's progress until it is done.
+		early.mu.Lock()
+		early.shown = true
+		percent := early.percent
+		early.mu.Unlock()
+		r.Stage(ytdlp.StageTranslating)
+		r.Progress(percent)
+		select {
+		case <-early.done:
+		case <-ctx.Done():
+			early.cancel()
+			<-early.done
+			return
+		}
+	}
 	e.mu.Lock()
 	fin := Finished{
 		JobID: j.id, ItemID: it.id, URL: it.url, Destination: it.destination.Path, TrackType: track, Video: it.video,
@@ -673,21 +756,10 @@ func (e *Engine) afterDownload(ctx context.Context, j *job, it *item, track ytdl
 		fin.Title = it.video.Title
 	}
 	e.mu.Unlock()
-	update := func(fn func()) {
-		e.mu.Lock()
-		fn()
-		e.mu.Unlock()
-		e.changed()
+	if early != nil {
+		fin.Early = early.result
 	}
-	e.d.AfterDownload(ctx, fin, Reporter{
-		Stage:    func(s ytdlp.Stage) { update(func() { it.stage, it.percent = s, 0 }) },
-		Progress: func(p float64) { update(func() { it.percent = p }) },
-		Log:      func(line string) { e.appendLog(j, line) },
-		Warn: func(code, message string) {
-			d := ytdlp.Diagnostic{Level: ytdlp.LevelWarning, Code: code, Message: message, Raw: message}
-			update(func() { it.diagnostics = appendDiagnostics(it.diagnostics, d) })
-		},
-	})
+	e.d.AfterDownload(ctx, fin, r)
 }
 
 func (e *Engine) finishDownload(ctx context.Context, j *job, it *item, code int, err error) {

@@ -114,8 +114,22 @@ func AfterDownload(ctx context.Context, env Env, d engine.Finished, r engine.Rep
 		return
 	}
 	r.Stage(ytdlp.StageTranslating)
-	r.Log("[translate] Creating bilingual subtitles")
-	path, untranslated, err := run(ctx, env, d, r)
+	var p *prepared
+	var err error
+	if e, ok := d.Early.(*early); ok {
+		p, err = e.p, e.err
+		if err == nil {
+			r.Log("[translate] The subtitles were translated while the video downloaded")
+		}
+	} else {
+		r.Log("[translate] Creating bilingual subtitles")
+		p, err = prepare(ctx, env, d.URL, d.Title, d.Video, r)
+	}
+	var path string
+	var untranslated int
+	if err == nil {
+		path, untranslated, err = finish(ctx, env, d.Destination, p, r)
+	}
 	var f *failure
 	switch {
 	case ctx.Err() != nil:
@@ -133,40 +147,85 @@ func AfterDownload(ctx context.Context, env Env, d engine.Finished, r engine.Rep
 	}
 }
 
-func run(ctx context.Context, env Env, d engine.Finished, r engine.Reporter) (string, int, error) {
-	chat, err := chatConfig(env)
+// Prepare fetches and translates a video's subtitles while the video
+// downloads, so they are ready when it is; AfterDownload then only puts
+// them in place. It returns nil when translation is off.
+func Prepare(ctx context.Context, env Env, s engine.Started, r engine.Reporter) any {
+	if !env.Settings.Translation.Enabled || s.TrackType == ytdlp.TrackAudio {
+		return nil
+	}
+	r.Log("[translate] Creating bilingual subtitles while the video downloads")
+	p, err := prepare(ctx, env, s.URL, s.Title, s.Video, r)
+	return &early{p: p, err: err}
+}
+
+// early is what Prepare hands to AfterDownload.
+type early struct {
+	p   *prepared
+	err error
+}
+
+// prepared are translated subtitles waiting for their video.
+type prepared struct {
+	cues         []Cue
+	translations []string
+	cp           *checkpoint
+}
+
+// finish puts prepared subtitles beside or into the downloaded video and
+// returns where they went and how many lines stayed untranslated.
+func finish(ctx context.Context, env Env, destination string, p *prepared, r engine.Reporter) (string, int, error) {
+	if destination == "" {
+		return "", 0, &failure{CodeFailed, "找不到下载的文件。"}
+	}
+	output, err := deliver(ctx, env, destination, p.cues, p.translations, r)
 	if err != nil {
 		return "", 0, err
 	}
-	if d.Destination == "" {
-		return "", 0, &failure{CodeFailed, "找不到下载的文件。"}
+	untranslated := 0
+	for _, t := range p.translations {
+		if t == "" {
+			untranslated++
+		}
+	}
+	if untranslated == 0 {
+		p.cp.remove()
+	}
+	return output, untranslated, nil
+}
+
+// prepare fetches a video's subtitles and translates them.
+func prepare(ctx context.Context, env Env, url, title string, video *ytdlp.Video, r engine.Reporter) (*prepared, error) {
+	chat, err := chatConfig(env)
+	if err != nil {
+		return nil, err
 	}
 	var inventory ytdlp.SubtitleInventory
-	if d.Video != nil {
-		inventory = d.Video.SubtitleInventory
+	if video != nil {
+		inventory = video.SubtitleInventory
 	}
 	source, ok := PickSource(inventory)
 	if !ok {
-		return "", 0, &failure{CodeSourceMissing, "这个视频没有可翻译的字幕（或已经是中文）。"}
+		return nil, &failure{CodeSourceMissing, "这个视频没有可翻译的字幕（或已经是中文）。"}
 	}
 	dir, err := os.MkdirTemp("", "ovd-translate-")
 	if err != nil {
-		return "", 0, &failure{CodeFailed, "无法创建临时文件夹：" + err.Error()}
+		return nil, &failure{CodeFailed, "无法创建临时文件夹：" + err.Error()}
 	}
 	defer os.RemoveAll(dir)
-	sourcePath, err := fetchSource(ctx, env, d.URL, source, dir)
+	sourcePath, err := fetchSource(ctx, env, url, source, dir)
 	if err != nil {
-		return "", 0, err
+		return nil, err
 	}
 	content, err := os.ReadFile(sourcePath)
 	if err != nil {
-		return "", 0, &failure{CodeFailed, "无法读取字幕：" + err.Error()}
+		return nil, &failure{CodeFailed, "无法读取字幕：" + err.Error()}
 	}
 	var cues []Cue
 	if strings.HasSuffix(sourcePath, ".json3") {
 		words, err := ParseJSON3(content)
 		if err != nil {
-			return "", 0, &failure{CodeFailed, "无法读取自动字幕：" + err.Error()}
+			return nil, &failure{CodeFailed, "无法读取自动字幕：" + err.Error()}
 		}
 		cues = Segment(words)
 		r.Log(fmt.Sprintf("[translate] Regrouped %d words of automatic captions into %d lines", len(words), len(cues)))
@@ -174,15 +233,15 @@ func run(ctx context.Context, env Env, d engine.Finished, r engine.Reporter) (st
 		cues = ParseSRT(string(content))
 	}
 	if len(cues) == 0 {
-		return "", 0, &failure{CodeSourceMissing, "字幕是空的。"}
+		return nil, &failure{CodeSourceMissing, "字幕是空的。"}
 	}
-	chat.video = videoContext(d)
+	chat.video = videoContext(title, video)
 	chat.log = r.Log
 	texts := make([]string, len(cues))
 	for i, cue := range cues {
 		texts[i] = cue.Text
 	}
-	cp := openCheckpoint(env.CacheDir, d.URL+"\n"+source.Language, texts, chat.target)
+	cp := openCheckpoint(env.CacheDir, url+"\n"+source.Language, texts, chat.target)
 	if env.Settings.Translation.HighQuality {
 		if notes := cp.notes(); notes != "" {
 			chat.notes = notes
@@ -192,7 +251,7 @@ func run(ctx context.Context, env Env, d engine.Finished, r engine.Reporter) (st
 			notes, err := readTranscript(ctx, env, chat, cues)
 			switch {
 			case ctx.Err() != nil:
-				return "", 0, ctx.Err()
+				return nil, ctx.Err()
 			case err != nil:
 				r.Log("[translate] Going on without a glossary: " + err.Error())
 			default:
@@ -204,22 +263,9 @@ func run(ctx context.Context, env Env, d engine.Finished, r engine.Reporter) (st
 	}
 	translations, err := translateCues(ctx, env, chat, texts, r, cp)
 	if err != nil {
-		return "", 0, err
+		return nil, err
 	}
-	output, err := deliver(ctx, env, d.Destination, cues, translations, r)
-	if err != nil {
-		return "", 0, err
-	}
-	untranslated := 0
-	for _, t := range translations {
-		if t == "" {
-			untranslated++
-		}
-	}
-	if untranslated == 0 {
-		cp.remove()
-	}
-	return output, untranslated, nil
+	return &prepared{cues: cues, translations: translations, cp: cp}, nil
 }
 
 type chat struct {
@@ -268,9 +314,9 @@ func chatConfig(env Env) (chat, error) {
 
 // videoContext describes a video for the model: its title, channel and
 // the start of its description.
-func videoContext(d engine.Finished) string {
-	title, channel, description := d.Title, "", ""
-	if v := d.Video; v != nil {
+func videoContext(title string, video *ytdlp.Video) string {
+	channel, description := "", ""
+	if v := video; v != nil {
 		if v.Title != "" {
 			title = v.Title
 		}

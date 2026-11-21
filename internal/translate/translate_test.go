@@ -262,11 +262,11 @@ func TestPromptAndContext(t *testing.T) {
 	if p := prompt("English"); strings.Contains(p, "pronouns") || strings.Contains(p, "{style}") {
 		t.Errorf("english prompt %q", p)
 	}
-	d := engine.Finished{Title: "Fallback", Video: &ytdlp.Video{Title: "Snow test", Uploader: "Cars", Description: "line one\n\nline   two"}}
-	if got := videoContext(d); got != "Title: Snow test\nChannel: Cars\nDescription: line one line two\n" {
+	v := &ytdlp.Video{Title: "Snow test", Uploader: "Cars", Description: "line one\n\nline   two"}
+	if got := videoContext("Fallback", v); got != "Title: Snow test\nChannel: Cars\nDescription: line one line two\n" {
 		t.Errorf("video context %q", got)
 	}
-	if got := videoContext(engine.Finished{Title: "Only"}); got != "Title: Only\n" {
+	if got := videoContext("Only", nil); got != "Title: Only\n" {
 		t.Errorf("title only %q", got)
 	}
 }
@@ -566,5 +566,39 @@ func TestStreamedReply(t *testing.T) {
 	}
 	if _, err := readStream(strings.NewReader("data: {\"error\": {\"message\": \"overloaded\"}}\n")); err == nil || !strings.Contains(err.Error(), "overloaded") {
 		t.Errorf("error chunk: %v", err)
+	}
+}
+
+func TestPrepareWhileDownloading(t *testing.T) {
+	var mu sync.Mutex
+	calls := 0
+	srv := chatServer(t, func(lines []string) (int, string) {
+		mu.Lock()
+		calls++
+		mu.Unlock()
+		out := make([]string, len(lines))
+		for i, l := range lines {
+			out[i] = "译" + l
+		}
+		b, _ := json.Marshal(out)
+		return http.StatusOK, string(b)
+	})
+	e, d, rec := env(t, srv, &subRunner{}), finished(t), &recorder{}
+	start := engine.Started{URL: d.URL, TrackType: ytdlp.TrackBoth, Video: d.Video}
+	got := Prepare(context.Background(), e, start, rec.reporter())
+	if ep, ok := got.(*early); !ok || ep.err != nil || len(ep.p.cues) != 3 {
+		t.Fatalf("prepared %+v", got)
+	}
+	before := calls
+	d.Early = got
+	AfterDownload(context.Background(), e, d, rec.reporter())
+	srt, err := os.ReadFile(strings.TrimSuffix(d.Destination, ".mp4") + ".srt")
+	if err != nil || !strings.Contains(string(srt), "译Hello\nHello") || calls != before || len(rec.warnings) != 0 {
+		t.Errorf("after download: calls %d→%d, warnings %q, srt %q, %v", before, calls, rec.warnings, srt, err)
+	}
+
+	e.Settings.Translation.Enabled = false
+	if Prepare(context.Background(), e, start, rec.reporter()) != nil {
+		t.Error("prepared with translation off")
 	}
 }

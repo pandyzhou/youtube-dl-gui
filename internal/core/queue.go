@@ -51,28 +51,39 @@ func NewEngine(c *Core, tools *Tools, changed func(), events func(engine.Event))
 			}
 			return nil
 		},
+		BeforeDownload: func(ctx context.Context, st engine.Started, r engine.Reporter) any {
+			if !c.Settings().Translation.Enabled {
+				return nil
+			}
+			return translate.Prepare(ctx, translateEnv(c, tools), st, r)
+		},
 		AfterDownload: func(ctx context.Context, d engine.Finished, r engine.Reporter) {
-			settings := c.Settings()
-			if !settings.Translation.Enabled && !d.SubtitlesOnly {
+			if !c.Settings().Translation.Enabled && !d.SubtitlesOnly {
 				return
 			}
-			key, err := c.Secrets.Get(secrets.TranslationAPIKey)
-			if err != nil {
-				slog.Warn("read translation key", "err", err)
-			}
-			translate.AfterDownload(ctx, translate.Env{
-				Runner:   engine.YtdlpRunner{Path: tools.Manager().Path("yt-dlp"), BinDir: c.Dirs.Bin},
-				Settings: settings,
-				Secrets:  c.AuthSecrets(),
-				APIKey:   key,
-				Client:   httpx.Client(settings.Network, 5*time.Minute),
-				CacheDir: filepath.Join(c.Dirs.Data, "translate-cache"),
-				FFmpeg:   tools.Manager().Path("ffmpeg"),
-				FFprobe:  tools.Manager().Path("ffprobe"),
-			}, d, r)
+			translate.AfterDownload(ctx, translateEnv(c, tools), d, r)
 		},
 		OnChange: changed,
 		OnEvent:  events,
 		Throttle: 100 * time.Millisecond,
 	})
+}
+
+// translateEnv is what a translation needs, as the settings are now.
+func translateEnv(c *Core, tools *Tools) translate.Env {
+	settings := c.Settings()
+	key, err := c.Secrets.Get(secrets.TranslationAPIKey)
+	if err != nil {
+		slog.Warn("read translation key", "err", err)
+	}
+	return translate.Env{
+		Runner:   engine.YtdlpRunner{Path: tools.Manager().Path("yt-dlp"), BinDir: c.Dirs.Bin},
+		Settings: settings,
+		Secrets:  c.AuthSecrets(),
+		APIKey:   key,
+		Client:   httpx.Client(settings.Network, 5*time.Minute),
+		CacheDir: filepath.Join(c.Dirs.Data, "translate-cache"),
+		FFmpeg:   tools.Manager().Path("ffmpeg"),
+		FFprobe:  tools.Manager().Path("ffprobe"),
+	}
 }
