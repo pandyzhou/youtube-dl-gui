@@ -5,7 +5,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/pandyzhou/lumadl/internal/config"
+	"github.com/pandyzhou/youtube-dl-gui/internal/config"
 )
 
 // ProgressTemplate makes yt-dlp print one machine-readable progress line

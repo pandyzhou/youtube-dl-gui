@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/pandyzhou/lumadl/internal/config"
+	"github.com/pandyzhou/youtube-dl-gui/internal/config"
 )
 
 // Errors for output settings that cannot be combined. The UI shows them

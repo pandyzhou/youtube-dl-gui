@@ -5,8 +5,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/pandyzhou/lumadl/internal/config"
-	"github.com/pandyzhou/lumadl/internal/ytdlp"
+	"github.com/pandyzhou/youtube-dl-gui/internal/config"
+	"github.com/pandyzhou/youtube-dl-gui/internal/ytdlp"
 )
 
 func sample() []ytdlp.Format {

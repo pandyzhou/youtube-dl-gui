@@ -6,7 +6,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/pandyzhou/lumadl/internal/config"
+	"github.com/pandyzhou/youtube-dl-gui/internal/config"
 )
 
 // PreviousName is the app's name before it became LumaDL (流光下载). Its

@@ -9,11 +9,11 @@ import (
 	"github.com/egoist/mygo"
 	"github.com/egoist/mygo/plugins/updater"
 
-	"github.com/pandyzhou/lumadl/internal/config"
-	"github.com/pandyzhou/lumadl/internal/core"
-	"github.com/pandyzhou/lumadl/internal/engine"
-	"github.com/pandyzhou/lumadl/internal/formats"
-	appui "github.com/pandyzhou/lumadl/internal/ui"
+	"github.com/pandyzhou/youtube-dl-gui/internal/config"
+	"github.com/pandyzhou/youtube-dl-gui/internal/core"
+	"github.com/pandyzhou/youtube-dl-gui/internal/engine"
+	"github.com/pandyzhou/youtube-dl-gui/internal/formats"
+	appui "github.com/pandyzhou/youtube-dl-gui/internal/ui"
 )
 
 // desktop ties the app to Windows: the tray icon, global shortcuts,

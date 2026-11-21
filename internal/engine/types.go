@@ -8,9 +8,9 @@ import (
 	"context"
 	"time"
 
-	"github.com/pandyzhou/lumadl/internal/config"
-	"github.com/pandyzhou/lumadl/internal/proc"
-	"github.com/pandyzhou/lumadl/internal/ytdlp"
+	"github.com/pandyzhou/youtube-dl-gui/internal/config"
+	"github.com/pandyzhou/youtube-dl-gui/internal/proc"
+	"github.com/pandyzhou/youtube-dl-gui/internal/ytdlp"
 )
 
 // Status of a job or an item.

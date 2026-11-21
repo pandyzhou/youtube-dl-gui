@@ -8,7 +8,7 @@ import (
 
 	"github.com/egoist/mygo/ui"
 
-	"github.com/pandyzhou/lumadl/internal/core"
+	"github.com/pandyzhou/youtube-dl-gui/internal/core"
 )
 
 type fakeTools struct {

@@ -5,7 +5,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/pandyzhou/lumadl/internal/config"
+	"github.com/pandyzhou/youtube-dl-gui/internal/config"
 )
 
 func TestMoveOldData(t *testing.T) {

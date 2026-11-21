@@ -16,15 +16,15 @@ import (
 	"github.com/egoist/mygo/ui"
 	"github.com/egoist/mygo/ui/netimage"
 
-	"github.com/pandyzhou/lumadl/internal/binaries"
-	"github.com/pandyzhou/lumadl/internal/config"
-	"github.com/pandyzhou/lumadl/internal/core"
-	"github.com/pandyzhou/lumadl/internal/engine"
-	"github.com/pandyzhou/lumadl/internal/formats"
-	"github.com/pandyzhou/lumadl/internal/httpx"
-	"github.com/pandyzhou/lumadl/internal/secrets"
-	"github.com/pandyzhou/lumadl/internal/translate"
-	appui "github.com/pandyzhou/lumadl/internal/ui"
+	"github.com/pandyzhou/youtube-dl-gui/internal/binaries"
+	"github.com/pandyzhou/youtube-dl-gui/internal/config"
+	"github.com/pandyzhou/youtube-dl-gui/internal/core"
+	"github.com/pandyzhou/youtube-dl-gui/internal/engine"
+	"github.com/pandyzhou/youtube-dl-gui/internal/formats"
+	"github.com/pandyzhou/youtube-dl-gui/internal/httpx"
+	"github.com/pandyzhou/youtube-dl-gui/internal/secrets"
+	"github.com/pandyzhou/youtube-dl-gui/internal/translate"
+	appui "github.com/pandyzhou/youtube-dl-gui/internal/ui"
 )
 
 // resolveDirs asks MyGo for the app's folders: %AppData%\<name> for data,

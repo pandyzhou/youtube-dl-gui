@@ -10,9 +10,9 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/pandyzhou/lumadl/internal/engine"
-	"github.com/pandyzhou/lumadl/internal/proc"
-	"github.com/pandyzhou/lumadl/internal/ytdlp"
+	"github.com/pandyzhou/youtube-dl-gui/internal/engine"
+	"github.com/pandyzhou/youtube-dl-gui/internal/proc"
+	"github.com/pandyzhou/youtube-dl-gui/internal/ytdlp"
 )
 
 // Where the bilingual subtitles go (settings.translation.output).

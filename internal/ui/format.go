@@ -3,8 +3,8 @@ package ui
 import (
 	"fmt"
 
-	"github.com/pandyzhou/lumadl/internal/engine"
-	"github.com/pandyzhou/lumadl/internal/ytdlp"
+	"github.com/pandyzhou/youtube-dl-gui/internal/engine"
+	"github.com/pandyzhou/youtube-dl-gui/internal/ytdlp"
 )
 
 // formatDuration formats seconds as "1:02:03" or "2:03".

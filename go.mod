@@ -1,4 +1,4 @@
-module github.com/pandyzhou/lumadl
+module github.com/pandyzhou/youtube-dl-gui
 
 go 1.27.3
 

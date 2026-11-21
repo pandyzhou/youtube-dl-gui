@@ -6,8 +6,8 @@ package formats
 import (
 	"fmt"
 
-	"github.com/pandyzhou/lumadl/internal/config"
-	"github.com/pandyzhou/lumadl/internal/ytdlp"
+	"github.com/pandyzhou/youtube-dl-gui/internal/config"
+	"github.com/pandyzhou/youtube-dl-gui/internal/ytdlp"
 )
 
 // Preset is a quality choice offered beside the link input.

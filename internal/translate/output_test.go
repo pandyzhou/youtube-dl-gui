@@ -6,8 +6,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/pandyzhou/lumadl/internal/engine"
-	"github.com/pandyzhou/lumadl/internal/ytdlp"
+	"github.com/pandyzhou/youtube-dl-gui/internal/engine"
+	"github.com/pandyzhou/youtube-dl-gui/internal/ytdlp"
 )
 
 func TestWriteASS(t *testing.T) {

@@ -6,9 +6,9 @@ import (
 
 	"github.com/egoist/mygo/ui"
 
-	"github.com/pandyzhou/lumadl/internal/config"
-	"github.com/pandyzhou/lumadl/internal/core"
-	"github.com/pandyzhou/lumadl/internal/formats"
+	"github.com/pandyzhou/youtube-dl-gui/internal/config"
+	"github.com/pandyzhou/youtube-dl-gui/internal/core"
+	"github.com/pandyzhou/youtube-dl-gui/internal/formats"
 )
 
 // Version is shown in the sidebar; main sets it from mygo.App.Version().

@@ -6,7 +6,7 @@ import (
 
 	"github.com/egoist/mygo/ui"
 
-	"github.com/pandyzhou/lumadl/internal/engine"
+	"github.com/pandyzhou/youtube-dl-gui/internal/engine"
 )
 
 // detailView shows a job in place of the list: what it is, what went

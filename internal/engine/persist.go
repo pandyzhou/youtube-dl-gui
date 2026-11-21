@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/pandyzhou/lumadl/internal/ytdlp"
+	"github.com/pandyzhou/youtube-dl-gui/internal/ytdlp"
 )
 
 // The queue is kept between runs as JSON: each job with what it fetched,

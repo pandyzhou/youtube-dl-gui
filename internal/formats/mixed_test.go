@@ -3,7 +3,7 @@ package formats
 import (
 	"testing"
 
-	"github.com/pandyzhou/lumadl/internal/ytdlp"
+	"github.com/pandyzhou/youtube-dl-gui/internal/ytdlp"
 )
 
 func TestMixedLink(t *testing.T) {

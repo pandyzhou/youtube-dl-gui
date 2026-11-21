@@ -17,7 +17,7 @@
 
 ## 安装
 
-在 [Releases](https://github.com/pandyzhou/lumadl/releases) 下载安装包 `lumadl-setup-*-amd64.exe`，或免安装版 `lumadl-*-portable.exe`。免安装版建议放在单独的文件夹里，自动更新会在它旁边写入几个文件。
+在 [Releases](https://github.com/pandyzhou/youtube-dl-gui/releases) 下载安装包 `lumadl-setup-*-amd64.exe`，或免安装版 `lumadl-*-portable.exe`。免安装版建议放在单独的文件夹里，自动更新会在它旁边写入几个文件。
 
 第一次启动时会下载 yt-dlp、ffmpeg 等工具（约 150 MB），之后这些工具会自动更新。
 

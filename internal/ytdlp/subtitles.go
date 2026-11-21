@@ -4,7 +4,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/pandyzhou/lumadl/internal/config"
+	"github.com/pandyzhou/youtube-dl-gui/internal/config"
 )
 
 // SubtitleArgs returns the subtitle options for a video with inventory, or
