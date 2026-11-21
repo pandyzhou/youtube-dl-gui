@@ -10,12 +10,15 @@ import (
 	"time"
 
 	"github.com/egoist/mygo"
+	"github.com/egoist/mygo/plugins/updater"
+	"github.com/egoist/mygo/plugins/updater/native"
 	"github.com/egoist/mygo/ui"
 	"github.com/egoist/mygo/ui/netimage"
 
 	"github.com/pandyzhou/youtube-dl-gui/internal/binaries"
 	"github.com/pandyzhou/youtube-dl-gui/internal/config"
 	"github.com/pandyzhou/youtube-dl-gui/internal/core"
+	"github.com/pandyzhou/youtube-dl-gui/internal/engine"
 	"github.com/pandyzhou/youtube-dl-gui/internal/formats"
 	"github.com/pandyzhou/youtube-dl-gui/internal/httpx"
 	"github.com/pandyzhou/youtube-dl-gui/internal/secrets"
@@ -46,6 +49,9 @@ func main() {
 	if !mygo.App.RequestSingleInstanceLock() {
 		return
 	}
+	// The update window, drawn natively: checks a day apart when updates
+	// are on (desktop.apply), and on demand from the about page.
+	mygo.Use(native.Plugin)
 
 	dirs := resolveDirs()
 	if closer, err := core.SetupLogging(dirs.Logs); err == nil {
@@ -66,7 +72,8 @@ func main() {
 		tools.Start()
 	}
 
-	queue := core.NewEngine(c, tools, redraw, nil)
+	var d *desktop // set before any event can come
+	queue := core.NewEngine(c, tools, redraw, func(ev engine.Event) { d.event(ev) })
 	defer queue.Close()
 	netimage.SetClient(httpx.Client(c.Settings().Network, 30*time.Second))
 
@@ -81,6 +88,7 @@ func main() {
 			s := c.Settings()
 			queue.SetConcurrency(s.Performance.MaxConcurrency)
 			netimage.SetClient(httpx.Client(s.Network, 30*time.Second))
+			d.apply()
 			redraw()
 			return err
 		},
@@ -99,6 +107,7 @@ func main() {
 			return c.Secrets.Set(key, value)
 		},
 		ShowInFolder: mygo.Shell.ShowItemInFolder,
+		CheckUpdates: updater.CheckForUpdates,
 		PickPath: func(title, current string, folder bool, done func(string)) {
 			go func() {
 				paths, err := mygo.Dialog.Open(mygo.OpenDialogOptions{
@@ -115,16 +124,15 @@ func main() {
 			}()
 		},
 	})
-	mygo.App.OnSecondInstance(func(args []string, workingDir string) {
-		if w := window.Load(); w != nil {
-			w.Restore()
-			w.Focus()
-		}
-	})
+	d = &desktop{core: c, queue: queue, app: app, window: window.Load, redraw: redraw}
+	mygo.App.OnSecondInstance(func(args []string, workingDir string) { d.show() })
 	mygo.App.WhenReady(func() {
 		watchClipboard(c, app, redraw)
+		// Started at login to sit in the tray: no window until asked.
+		s := c.Settings()
+		hidden := mygo.App.WasOpenedAtLogin() && s.System.AutoStartMinimised && s.System.TrayEnabled
 		// Vibrancy puts Mica behind the sidebar on Windows 11 22H2+; opaque elsewhere.
-		window.Store(mygo.NewWindow(mygo.WindowOptions{
+		win := mygo.NewWindow(mygo.WindowOptions{
 			Title:     "Open Video Downloader",
 			Width:     1000,
 			Height:    760,
@@ -133,7 +141,12 @@ func main() {
 			StateKey:  "main",
 			Vibrancy:  mygo.VibrancySidebar,
 			Content:   ui.View(app.View),
-		}))
+			Hidden:    hidden,
+		})
+		window.Store(win)
+		win.OnClose(d.onClose)
+		d.apply()
+		go d.watchProgress()
 	})
 	if err := mygo.App.Run(); err != nil {
 		log.Fatal(err)

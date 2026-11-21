@@ -80,6 +80,9 @@ var (
 //go:embed icons/app.png
 var appPNG []byte
 
+// AppIconPNG is the app's logo as PNG, for the tray icon.
+func AppIconPNG() []byte { return appPNG }
+
 // appIcon is the app's logo, drawn in the sidebar and the about page.
 var appIcon = mustBitmap(appPNG)
 

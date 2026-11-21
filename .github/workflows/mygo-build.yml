@@ -58,6 +58,9 @@ jobs:
           echo "Building $version"
 
       - name: Build
+        env:
+          # Signs the update archive when the secret is set; previews build without it.
+          MYGO_UPDATER_PRIVATE_KEY: ${{ secrets.MYGO_UPDATER_PRIVATE_KEY }}
         run: go tool mygo build -platform windows/amd64
 
       - name: List output

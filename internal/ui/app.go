@@ -50,6 +50,8 @@ type Deps struct {
 	SetSecret         func(key, value string) error
 	// ShowInFolder reveals a downloaded file in Explorer.
 	ShowInFolder func(path string)
+	// CheckUpdates opens the update window and checks now.
+	CheckUpdates func()
 	// PickPath asks for a folder (or a file) and calls done on the main
 	// thread with it, or "" when canceled.
 	PickPath func(title, current string, folder bool, done func(path string))
@@ -225,6 +227,13 @@ func (a *App) aboutPage(c *ui.Context, p palette) {
 				})
 			})
 			ui.Text(c, "基于 yt-dlp 的视频下载工具，界面由 MyGo 原生绘制。").FontSize(13).TextColor(p.muted)
+			if a.deps.CheckUpdates != nil {
+				ui.Row(c).Children(func() {
+					if ui.Button(c, "检查更新").Height(controlHeight).Padding(0, 16).Clicked() {
+						a.deps.CheckUpdates()
+					}
+				})
+			}
 		})
 	})
 }
