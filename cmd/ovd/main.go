@@ -5,10 +5,12 @@ import (
 	"log"
 	"log/slog"
 	"path/filepath"
+	"sync/atomic"
 
 	"github.com/egoist/mygo"
 	"github.com/egoist/mygo/ui"
 
+	"github.com/pandyzhou/youtube-dl-gui/internal/binaries"
 	"github.com/pandyzhou/youtube-dl-gui/internal/core"
 	"github.com/pandyzhou/youtube-dl-gui/internal/secrets"
 	appui "github.com/pandyzhou/youtube-dl-gui/internal/ui"
@@ -44,20 +46,31 @@ func main() {
 		defer closer.Close()
 	}
 	slog.Info("starting", "version", mygo.App.Version())
-	_ = core.Open(dirs, secrets.System{}) // the engine (M4) and settings page (M6) use it
+	c := core.Open(dirs, secrets.System{})
+
+	// Background goroutines redraw the window through it once it exists.
+	var window atomic.Pointer[mygo.Window]
+	redraw := func() {
+		if w := window.Load(); w != nil {
+			w.Invalidate()
+		}
+	}
+	tools := core.NewTools(c, redraw)
+	if needsToolCheck(c, tools) {
+		tools.Start()
+	}
 
 	appui.Version = mygo.App.Version()
-	app := appui.New()
-	var win *mygo.Window
+	app := appui.New(appui.Deps{Tools: tools})
 	mygo.App.OnSecondInstance(func(args []string, workingDir string) {
-		if win != nil {
-			win.Restore()
-			win.Focus()
+		if w := window.Load(); w != nil {
+			w.Restore()
+			w.Focus()
 		}
 	})
 	mygo.App.WhenReady(func() {
 		// Vibrancy puts Mica behind the sidebar on Windows 11 22H2+; opaque elsewhere.
-		win = mygo.NewWindow(mygo.WindowOptions{
+		window.Store(mygo.NewWindow(mygo.WindowOptions{
 			Title:     "Open Video Downloader",
 			Width:     1000,
 			Height:    760,
@@ -66,9 +79,23 @@ func main() {
 			StateKey:  "main",
 			Vibrancy:  mygo.VibrancySidebar,
 			Content:   ui.View(app.View),
-		})
+		}))
 	})
 	if err := mygo.App.Run(); err != nil {
 		log.Fatal(err)
 	}
+}
+
+// needsToolCheck reports whether to fetch the tool manifest at startup: a
+// tool is missing, or updates are on. Otherwise startup stays offline.
+func needsToolCheck(c *core.Core, tools *core.Tools) bool {
+	if c.Settings().Update.UpdateBinaries {
+		return true
+	}
+	for _, name := range binaries.Tools {
+		if !tools.Manager().Installed(name) {
+			return true
+		}
+	}
+	return false
 }

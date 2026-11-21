@@ -3,6 +3,8 @@ package ui
 
 import (
 	"github.com/egoist/mygo/ui"
+
+	"github.com/pandyzhou/youtube-dl-gui/internal/core"
 )
 
 // Version is shown in the sidebar; main sets it from mygo.App.Version().
@@ -39,17 +41,34 @@ var (
 	footerNav = []navItem{{"/settings", iconSettings, "设置"}, {"/about", iconInfo, "关于"}}
 )
 
+// Deps are what the window shows and drives. Nil fields are left out, as
+// in tests of a single page.
+type Deps struct {
+	Tools ToolsSource
+}
+
 // App is the state of the main window.
 type App struct {
 	router *ui.Router
+	tools  ToolsSource
 
 	link   string
 	preset string
+	// skipInstall shows the app over a failed tool install, so the proxy
+	// can be set; downloads stay unavailable until the tools exist.
+	skipInstall bool
 }
 
 // New returns the app on its queue page.
-func New() *App {
-	return &App{router: ui.NewRouter("/queue"), preset: qualityPresets[0]}
+func New(d Deps) *App {
+	return &App{router: ui.NewRouter("/queue"), tools: d.Tools, preset: qualityPresets[0]}
+}
+
+func (a *App) toolsState() core.ToolsState {
+	if a.tools == nil {
+		return core.ToolsState{Phase: core.ToolsReady}
+	}
+	return a.tools.State()
 }
 
 // View builds the main window.
@@ -57,11 +76,16 @@ func (a *App) View(c *ui.Context) {
 	p := applyTheme(c)
 	// Over the window material (Mica on Windows 11) the root stays clear so
 	// the sidebar shows it; the content draws its own opaque background.
+	tools := a.toolsState()
+	if len(tools.MissingRequired) > 0 && !a.skipInstall {
+		a.installView(c, p, tools)
+		return
+	}
 	if c.Vibrancy() {
 		c.Root().Background(ui.Transparent)
 	}
 	ui.Row(c).Fill().AlignItems(ui.Stretch).Children(func() {
-		a.sidebar(c, p)
+		a.sidebar(c, p, tools)
 		ui.Column(c).Grow(1).AlignItems(ui.Stretch).Background(p.content).Children(func() {
 			a.router.View(c, func(r *ui.Route) {
 				switch {
@@ -82,7 +106,7 @@ func (a *App) View(c *ui.Context) {
 	})
 }
 
-func (a *App) sidebar(c *ui.Context, p palette) {
+func (a *App) sidebar(c *ui.Context, p palette, tools core.ToolsState) {
 	col := ui.Column(c).Width(sidebarWidth).AlignItems(ui.Stretch).
 		Padding(gridTop, sidebarPadX, 14, sidebarPadX).Gap(2)
 	if !c.Vibrancy() {
@@ -101,8 +125,24 @@ func (a *App) sidebar(c *ui.Context, p palette) {
 		for _, item := range footerNav {
 			a.navRow(c, p, item)
 		}
+		if note := toolsNote(tools); note != "" {
+			ui.Text(c, note).FontSize(11).TextColor(p.muted).Padding(8, rowInset, 0, rowInset)
+		}
 		ui.Text(c, "v"+Version).FontSize(11).TextColor(p.muted).Padding(8, rowInset, 0, rowInset)
 	})
+}
+
+// toolsNote tells, under the navigation, about a background tool update.
+func toolsNote(s core.ToolsState) string {
+	switch {
+	case len(s.MissingRequired) > 0:
+		return "下载工具未安装"
+	case s.Phase == core.ToolsInstalling:
+		return "正在更新下载工具…"
+	case s.Phase == core.ToolsFailed && len(s.Tools) > 0:
+		return "下载工具更新失败"
+	}
+	return ""
 }
 
 // navRow is one sidebar item: icon and label at the shared inset, a light
