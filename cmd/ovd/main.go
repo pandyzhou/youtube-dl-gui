@@ -25,6 +25,7 @@ func main() {
 		}
 	})
 	mygo.App.WhenReady(func() {
+		// Vibrancy puts Mica behind the sidebar on Windows 11 22H2+; opaque elsewhere.
 		win = mygo.NewWindow(mygo.WindowOptions{
 			Title:     "Open Video Downloader",
 			Width:     1000,
@@ -32,7 +33,6 @@ func main() {
 			MinWidth:  760,
 			MinHeight: 560,
 			StateKey:  "main",
-			// Mica behind the sidebar on Windows 11 22H2+; opaque elsewhere.
 			Vibrancy:  mygo.VibrancySidebar,
 			Content:   ui.View(app.View),
 		})
