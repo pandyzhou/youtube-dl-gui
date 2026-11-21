@@ -307,6 +307,90 @@ func TestHighQualityMode(t *testing.T) {
 	}
 }
 
+func TestSegmentAutomaticCaptions(t *testing.T) {
+	// Rolling YouTube captions: words with offsets, newline appends, an
+	// event running on under the next, a pause, a sound tag.
+	data := []byte(`{"events": [
+		{"tStartMs": 0, "dDurationMs": 6000, "wWinId": 1, "segs": [{"utf8": "so"}, {"utf8": " today", "tOffsetMs": 300}, {"utf8": " we're", "tOffsetMs": 700}, {"utf8": " going", "tOffsetMs": 900}]},
+		{"tStartMs": 1200, "dDurationMs": 10, "aAppend": 1, "segs": [{"utf8": "\n"}]},
+		{"tStartMs": 1200, "dDurationMs": 4000, "wWinId": 1, "segs": [{"utf8": "to"}, {"utf8": " look", "tOffsetMs": 200}, {"utf8": " at", "tOffsetMs": 400}, {"utf8": " this", "tOffsetMs": 500}]},
+		{"tStartMs": 4000, "dDurationMs": 2000, "segs": [{"utf8": "[Music]"}]},
+		{"tStartMs": 6500, "dDurationMs": 3000, "segs": [{"utf8": "okay"}, {"utf8": " thanks.", "tOffsetMs": 400}, {"utf8": " Bye", "tOffsetMs": 900}]}
+	]}`)
+	words, err := ParseJSON3(data)
+	if err != nil || len(words) != 12 {
+		t.Fatalf("words %d, %v", len(words), err)
+	}
+	if w := words[3]; w.Text != "going" || w.Start != 900 || w.End != 1200 {
+		t.Errorf("going %+v", w)
+	}
+	if w := words[7]; w.Text != "this" || w.End != 1700+300+60*4 {
+		t.Errorf("this %+v", w)
+	}
+	var got []string
+	for _, c := range Segment(words) {
+		got = append(got, c.Timing+" "+c.Text)
+	}
+	want := []string{
+		"00:00:00,000 --> 00:00:02,740 so today we're going to look at this",
+		"00:00:04,000 --> 00:00:05,220 [Music]",
+		"00:00:06,500 --> 00:00:07,400 okay thanks.",
+		"00:00:07,400 --> 00:00:08,380 Bye",
+	}
+	if !reflect.DeepEqual(got, want) {
+		t.Errorf("cues\n%s", strings.Join(got, "\n"))
+	}
+}
+
+func TestSegmentLongAndCJK(t *testing.T) {
+	var words []Word
+	for i := range 40 {
+		words = append(words, Word{Start: i * 300, End: i*300 + 300, Text: "word"})
+	}
+	cues := Segment(words)
+	if len(cues) != 3 || len(strings.Fields(cues[0].Text)) != maxWeight {
+		t.Errorf("long run: %d cues, first %q", len(cues), cues[0].Text)
+	}
+	cjk := []Word{{0, 500, "今天"}, {500, 1000, "我们"}, {1000, 1500, "来看"}}
+	if c := Segment(cjk); len(c) != 1 || c[0].Text != "今天我们来看" {
+		t.Errorf("cjk %+v", c)
+	}
+	if n := wordWeight("今天我们"); n != 2 {
+		t.Errorf("cjk weight %d", n)
+	}
+}
+
+// json3Runner plays yt-dlp writing json3 automatic captions.
+type json3Runner struct{ calls int }
+
+func (r *json3Runner) Run(ctx context.Context, args []string, onLine func(proc.Line)) (int, error) {
+	r.calls++
+	var out string
+	for i, a := range args {
+		if a == "-o" {
+			out = args[i+1]
+		}
+	}
+	data := `{"events": [{"tStartMs": 0, "dDurationMs": 2000, "segs": [{"utf8": "Hello."}]}, {"tStartMs": 3000, "dDurationMs": 2000, "segs": [{"utf8": "Bye."}]}]}`
+	return 0, os.WriteFile(strings.Replace(out, "%(ext)s", "en-orig.json3", 1), []byte(data), 0o644)
+}
+
+func TestAutomaticCaptionsUseJSON3(t *testing.T) {
+	srv := chatServer(t, func(lines []string) (int, string) {
+		b, _ := json.Marshal(lines)
+		return http.StatusOK, strings.NewReplacer("Hello.", "你好", "Bye.", "再见").Replace(string(b))
+	})
+	runner, rec, d := &json3Runner{}, &recorder{}, finished(t)
+	AfterDownload(context.Background(), env(t, srv, runner), d, rec.reporter())
+	got, err := os.ReadFile(strings.TrimSuffix(d.Destination, ".mp4") + ".srt")
+	if err != nil || len(rec.warnings) != 0 || runner.calls != 1 {
+		t.Fatalf("err %v, warnings %q, calls %d", err, rec.warnings, runner.calls)
+	}
+	if !strings.Contains(string(got), "00:00:00,000 --> 00:00:01,160\n你好\nHello.") {
+		t.Errorf("srt %q", got)
+	}
+}
+
 func TestPartialTranslation(t *testing.T) {
 	srv := chatServer(t, func(lines []string) (int, string) {
 		if len(lines) > 1 {

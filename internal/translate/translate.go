@@ -143,15 +143,25 @@ func run(ctx context.Context, env Env, d engine.Finished, r engine.Reporter) (st
 		return "", 0, &failure{CodeFailed, "无法创建临时文件夹：" + err.Error()}
 	}
 	defer os.RemoveAll(dir)
-	srtPath, err := fetchSource(ctx, env, d.URL, source, dir)
+	sourcePath, err := fetchSource(ctx, env, d.URL, source, dir)
 	if err != nil {
 		return "", 0, err
 	}
-	content, err := os.ReadFile(srtPath)
+	content, err := os.ReadFile(sourcePath)
 	if err != nil {
 		return "", 0, &failure{CodeFailed, "无法读取字幕：" + err.Error()}
 	}
-	cues := ParseSRT(string(content))
+	var cues []Cue
+	if strings.HasSuffix(sourcePath, ".json3") {
+		words, err := ParseJSON3(content)
+		if err != nil {
+			return "", 0, &failure{CodeFailed, "无法读取自动字幕：" + err.Error()}
+		}
+		cues = Segment(words)
+		r.Log(fmt.Sprintf("[translate] Regrouped %d words of automatic captions into %d lines", len(words), len(cues)))
+	} else {
+		cues = ParseSRT(string(content))
+	}
 	if len(cues) == 0 {
 		return "", 0, &failure{CodeSourceMissing, "字幕是空的。"}
 	}
@@ -306,19 +316,39 @@ func languageBase(language string) string {
 	return base
 }
 
-// fetchSource downloads the source subtitles as SRT into dir with a
-// separate yt-dlp run.
+// fetchSource downloads the source subtitles into dir with a separate
+// yt-dlp run: automatic captions as json3, with word timings, when the
+// site has them, anything else as SRT.
 func fetchSource(ctx context.Context, env Env, url string, s Source, dir string) (string, error) {
+	if s.Automatic {
+		sub := filepath.Join(dir, "json3")
+		if err := os.Mkdir(sub, 0o755); err == nil {
+			path, err := downloadSubs(ctx, env, url, s, sub, "json3")
+			if err == nil || ctx.Err() != nil {
+				return path, err
+			}
+		}
+	}
+	return downloadSubs(ctx, env, url, s, dir, "srt")
+}
+
+// downloadSubs runs yt-dlp for subtitles in a format, json3 or srt
+// (converted from whatever the site has).
+func downloadSubs(ctx context.Context, env Env, url string, s Source, dir, format string) (string, error) {
 	write := "--write-subs"
 	if s.Automatic {
 		write = "--write-auto-subs"
 	}
+	formatArgs := []string{"--sub-format", "json3"}
+	if format == "srt" {
+		formatArgs = []string{"--sub-format", "srt/vtt/best", "--convert-subs", "srt"}
+	}
 	args := []string{"--encoding", "utf-8"}
 	args = append(args, ytdlp.NetworkArgs(env.Settings.Network)...)
 	args = append(args, ytdlp.AuthArgs(env.Settings.Auth, env.Secrets)...)
-	args = append(args, "--skip-download", "--no-playlist", write,
-		"--sub-langs", "(?i)"+s.Language, "--sub-format", "srt/vtt/best", "--convert-subs", "srt",
-		"-o", filepath.Join(dir, "source.%(ext)s"), url)
+	args = append(args, "--skip-download", "--no-playlist", write, "--sub-langs", "(?i)"+s.Language)
+	args = append(args, formatArgs...)
+	args = append(args, "-o", filepath.Join(dir, "source.%(ext)s"), url)
 	var last string
 	code, err := env.Runner.Run(ctx, args, func(l proc.Line) {
 		if l.Stderr && strings.TrimSpace(l.Text) != "" {
@@ -334,7 +364,7 @@ func fetchSource(ctx context.Context, env Env, url string, s Source, dir string)
 		}
 		return "", &failure{CodeSourceMissing, last}
 	}
-	matches, _ := filepath.Glob(filepath.Join(dir, "*.srt"))
+	matches, _ := filepath.Glob(filepath.Join(dir, "*."+format))
 	if len(matches) == 0 {
 		return "", &failure{CodeSourceMissing, "yt-dlp 没有写出字幕文件。"}
 	}
