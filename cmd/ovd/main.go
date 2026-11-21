@@ -77,6 +77,8 @@ func main() {
 	var d *desktop // set before any event can come
 	queue := core.NewEngine(c, tools, redraw, func(ev engine.Event) { d.event(ev) })
 	defer queue.Close()
+	core.RestoreQueue(c, queue)
+	defer core.KeepQueue(c, queue)() // saves before the queue closes
 	netimage.SetClient(httpx.Client(c.Settings().Network, 30*time.Second))
 
 	appui.Version = mygo.App.Version()
