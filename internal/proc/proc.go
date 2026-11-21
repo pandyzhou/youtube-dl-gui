@@ -65,7 +65,10 @@ func Run(ctx context.Context, spec Spec, onLine func(Line)) (int, error) {
 	var readers sync.WaitGroup
 	readers.Add(2)
 	go func() { defer readers.Done(); SplitLines(stdout, func(s string) { lines <- Line{Text: s} }) }()
-	go func() { defer readers.Done(); SplitLines(stderr, func(s string) { lines <- Line{Stderr: true, Text: s} }) }()
+	go func() {
+		defer readers.Done()
+		SplitLines(stderr, func(s string) { lines <- Line{Stderr: true, Text: s} })
+	}()
 	go func() { readers.Wait(); close(lines) }()
 
 	stop := context.AfterFunc(ctx, tree.kill)
