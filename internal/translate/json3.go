@@ -13,10 +13,12 @@ import (
 // repeat the line before, so they are read as words here and regrouped
 // into short sentences, each timed from its first word to its last.
 
-// Word is one word of automatic captions, in milliseconds.
+// Word is one word of automatic captions, in milliseconds. Turn marks
+// the first word after a change of speaker (">>" in the captions).
 type Word struct {
 	Start, End int
 	Text       string
+	Turn       bool
 }
 
 // Segmentation tuning; weights count words, or two CJK characters as one.
@@ -56,13 +58,19 @@ func ParseJSON3(data []byte) ([]Word, error) {
 		return nil, err
 	}
 	var words []Word
+	turn := false
 	for _, e := range doc.Events {
 		if e.Append != 0 {
 			continue
 		}
 		for _, s := range e.Segs {
-			if text := strings.Join(strings.Fields(s.Text), " "); text != "" {
-				words = append(words, Word{Start: e.Start + s.Offset, End: e.Start + e.Duration, Text: text})
+			text := strings.Join(strings.Fields(s.Text), " ")
+			if rest, ok := strings.CutPrefix(text, ">>"); ok {
+				text, turn = strings.TrimSpace(rest), true
+			}
+			if text != "" {
+				words = append(words, Word{Start: e.Start + s.Offset, End: e.Start + e.Duration, Text: text, Turn: turn})
+				turn = false
 			}
 		}
 	}
@@ -79,8 +87,8 @@ func ParseJSON3(data []byte) ([]Word, error) {
 }
 
 // Segment groups words into subtitle lines: a line ends at the end of a
-// sentence, at a pause, around a sound tag such as [Music] or when it gets
-// long, and very short lines join a neighbour.
+// sentence, at a pause, at a change of speaker, around a sound tag such as
+// [Music] or when it gets long, and very short lines join a neighbour.
 func Segment(words []Word) []Cue {
 	var groups [][]Word
 	var cur []Word
@@ -92,7 +100,7 @@ func Segment(words []Word) []Cue {
 		cur, weight = nil, 0
 	}
 	for i, w := range words {
-		if isTag(w.Text) {
+		if isTag(w.Text) || w.Turn {
 			flush()
 		}
 		cur = append(cur, w)
@@ -100,7 +108,7 @@ func Segment(words []Word) []Cue {
 		gap := pauseMs
 		if i+1 < len(words) {
 			gap = words[i+1].Start - w.End
-			if isTag(words[i+1].Text) {
+			if isTag(words[i+1].Text) || words[i+1].Turn {
 				gap = pauseMs
 			}
 		}
@@ -136,13 +144,19 @@ func Segment(words []Word) []Cue {
 }
 
 // mergeShort joins lines of a word or two to the line before, or else the
-// line after, when they belong together.
+// line after, when the same speaker goes on: within a sentence, or quick
+// short sentences such as "Right. Right. Okay."
 func mergeShort(groups [][]Word) [][]Word {
 	short := func(g []Word) bool { return groupWeight(g) <= shortWeight && !isTag(g[0].Text) }
 	fits := func(a, b []Word) bool {
-		last := a[len(a)-1]
-		return !isTag(a[0].Text) && !isTag(b[0].Text) && !endsSentence(last.Text) &&
-			b[0].Start-last.End < pauseMs && groupWeight(a)+groupWeight(b) <= mergeWeight
+		last, gap, weight := a[len(a)-1], b[0].Start-a[len(a)-1].End, groupWeight(a)+groupWeight(b)
+		if isTag(a[0].Text) || isTag(b[0].Text) || b[0].Turn {
+			return false
+		}
+		if endsSentence(last.Text) {
+			return gap < softPauseMs && weight <= softWeight
+		}
+		return gap < pauseMs && weight <= mergeWeight
 	}
 	var out [][]Word
 	for _, g := range groups {

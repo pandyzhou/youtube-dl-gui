@@ -334,11 +334,29 @@ func TestSegmentAutomaticCaptions(t *testing.T) {
 	want := []string{
 		"00:00:00,000 --> 00:00:02,740 so today we're going to look at this",
 		"00:00:04,000 --> 00:00:05,220 [Music]",
-		"00:00:06,500 --> 00:00:07,400 okay thanks.",
-		"00:00:07,400 --> 00:00:08,380 Bye",
+		"00:00:06,500 --> 00:00:08,380 okay thanks. Bye",
 	}
 	if !reflect.DeepEqual(got, want) {
 		t.Errorf("cues\n%s", strings.Join(got, "\n"))
+	}
+}
+
+func TestSegmentSpeakers(t *testing.T) {
+	data := []byte(`{"events": [
+		{"tStartMs": 0, "dDurationMs": 4000, "segs": [{"utf8": "Right."}, {"utf8": " Right.", "tOffsetMs": 240}, {"utf8": " Okay.", "tOffsetMs": 480}]},
+		{"tStartMs": 1000, "dDurationMs": 4000, "segs": [{"utf8": ">> Hold"}, {"utf8": " on.", "tOffsetMs": 160}]},
+		{"tStartMs": 1500, "dDurationMs": 4000, "segs": [{"utf8": ">>"}, {"utf8": " Nice.", "tOffsetMs": 100}]}
+	]}`)
+	words, err := ParseJSON3(data)
+	if err != nil || len(words) != 6 || words[3].Text != "Hold" || !words[3].Turn || words[4].Turn || !words[5].Turn {
+		t.Fatalf("words %+v, %v", words, err)
+	}
+	var got []string
+	for _, c := range Segment(words) {
+		got = append(got, c.Text)
+	}
+	if !reflect.DeepEqual(got, []string{"Right. Right. Okay.", "Hold on.", "Nice."}) {
+		t.Errorf("lines %q", got)
 	}
 }
 
