@@ -339,7 +339,9 @@ func TestPlaylistSelectionAndSplit(t *testing.T) {
 	if err := h.e.SelectPlaylist(id, []formats.SelectionRow{{Index: 4}, {Index: 2}}); err != nil {
 		t.Fatal(err)
 	}
-	jobs := h.wait("split", func(jobs []JobView) bool { return len(jobs) == 3 && jobs[0].Status == StatusReady && jobs[1].Status == StatusReady })
+	jobs := h.wait("split", func(jobs []JobView) bool {
+		return len(jobs) == 3 && jobs[0].Status == StatusReady && jobs[1].Status == StatusReady
+	})
 	if jobs[0].Title != "Entry 4" || jobs[1].Title != "Entry 2" || jobs[2].ID != older || jobs[0].Playlist == nil {
 		t.Fatalf("split jobs %+v", jobs)
 	}
