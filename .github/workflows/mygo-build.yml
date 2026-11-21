@@ -61,6 +61,7 @@ jobs:
           if [ "$RELEASE" = "true" ]; then
             last="$(git tag -l 'v4.0.*' | sed 's/^v4\.0\.//' | grep -E '^[0-9]+$' | sort -n | tail -1)"
             version="4.0.$(( ${last:--1} + 1 ))"
+            if [ -n "$last" ]; then echo "PREVIOUS_TAG=v4.0.$last" >> "$GITHUB_ENV"; fi
           else
             version="$(jq -r .version mygo.json)-preview.${GITHUB_RUN_NUMBER}"
           fi
@@ -86,7 +87,33 @@ jobs:
           tag="v$VERSION"
           git tag "$tag" "$GITHUB_SHA"
           git push origin "$tag"
-          cat > notes.md <<'EOF'
+
+          # What changed: the feat, fix and perf commits since the last
+          # release, without their type, scope or PR number.
+          range="$GITHUB_SHA"
+          if [ -n "${PREVIOUS_TAG:-}" ]; then range="$PREVIOUS_TAG..$GITHUB_SHA"; fi
+          git log --no-merges --format='%s' $range > subjects.txt
+          {
+            echo "## 更新内容"
+            echo
+            found=""
+            for kind in "feat:新功能" "fix:修复" "perf:优化"; do
+              type="${kind%%:*}"
+              title="${kind#*:}"
+              items="$(grep -E "^${type}(\([^)]*\))?!?: " subjects.txt \
+                | sed -E "s/^${type}(\([^)]*\))?!?: //; s/ \[skip ci\]//; s/ \(#[0-9]+\)$//; s/^/- /" || true)"
+              if [ -n "$items" ]; then
+                printf '**%s**\n\n%s\n\n' "$title" "$items"
+                found=1
+              fi
+            done
+            if [ -z "$found" ]; then printf -- '- 小的改进和修复\n\n'; fi
+          } > notes.md
+          cat notes.md
+
+          cat >> notes.md <<'EOF'
+          ## 下载
+
           Windows x64 · 简体中文。
 
           - 安装包：`open-video-downloader-setup-*-amd64.exe`
