@@ -3,6 +3,7 @@ package core
 import (
 	"context"
 	"log/slog"
+	"path/filepath"
 	"time"
 
 	"github.com/pandyzhou/youtube-dl-gui/internal/engine"
@@ -52,7 +53,7 @@ func NewEngine(c *Core, tools *Tools, changed func(), events func(engine.Event))
 		},
 		AfterDownload: func(ctx context.Context, d engine.Finished, r engine.Reporter) {
 			settings := c.Settings()
-			if !settings.Translation.Enabled {
+			if !settings.Translation.Enabled && !d.SubtitlesOnly {
 				return
 			}
 			key, err := c.Secrets.Get(secrets.TranslationAPIKey)
@@ -65,6 +66,7 @@ func NewEngine(c *Core, tools *Tools, changed func(), events func(engine.Event))
 				Secrets:  c.AuthSecrets(),
 				APIKey:   key,
 				Client:   httpx.Client(settings.Network, 5*time.Minute),
+				CacheDir: filepath.Join(c.Dirs.Data, "translate-cache"),
 			}, d, r)
 		},
 		OnChange: changed,

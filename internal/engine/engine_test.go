@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"os"
 	"path/filepath"
 	"strings"
 	"sync"
@@ -479,5 +480,32 @@ func TestPoolTakesTurns(t *testing.T) {
 	defer mu.Unlock()
 	if got := strings.Join(order, ","); got != "a1,b1,a2,a3" {
 		t.Errorf("order %s", got)
+	}
+}
+
+func TestSubtitlesForExistingFile(t *testing.T) {
+	h := newHarness(t, nil)
+	h.fake.infos["https://v/a"] = videoJSON("a", "Video A")
+	file := filepath.Join(t.TempDir(), "Video A.mkv")
+	if err := os.WriteFile(file, []byte("video"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	var got Finished
+	h.e.d.AfterDownload = func(ctx context.Context, d Finished, r Reporter) {
+		got = d
+		r.Progress(50)
+	}
+	id := h.e.Add("https://v/a", AddOptions{Existing: file})
+	j := h.waitStatus(id, StatusDone)
+	if len(h.fake.downloads()) != 0 {
+		t.Errorf("downloaded %q", h.fake.downloads())
+	}
+	if !got.SubtitlesOnly || got.Destination != file || got.Video == nil || got.Video.Title != "Video A" || j.Existing != file {
+		t.Errorf("finished %+v, job %+v", got, j)
+	}
+
+	missing := h.e.Add("https://v/a", AddOptions{Existing: filepath.Join(t.TempDir(), "gone.mkv")})
+	if j := h.waitStatus(missing, StatusError); !strings.Contains(j.Items[0].Err, "找不到视频文件") {
+		t.Errorf("missing file: %+v", j.Items[0])
 	}
 }

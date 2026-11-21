@@ -68,6 +68,7 @@ func (j *job) view() JobView {
 	v := JobView{
 		ID: j.id, URL: j.url, Status: j.status(), Title: j.title(), Playlist: j.playlist,
 		Combined: j.combined, Preset: j.preset, Custom: j.custom, Err: j.err, Added: j.added,
+		Existing: j.existing,
 	}
 	if j.playlist != nil {
 		v.Thumbnail, v.Uploader = j.playlist.Thumbnail, j.playlist.Uploader

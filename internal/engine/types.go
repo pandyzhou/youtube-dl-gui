@@ -99,6 +99,9 @@ type Finished struct {
 	Destination string
 	TrackType   ytdlp.TrackType
 	Video       *ytdlp.Video
+	// SubtitlesOnly is set for a file downloaded before whose subtitles
+	// were asked for: they are made whatever the settings say.
+	SubtitlesOnly bool
 }
 
 // Reporter lets AfterDownload show what it does on the item.
@@ -115,6 +118,9 @@ type AddOptions struct {
 	// Start downloads as soon as the information is in; a playlist then
 	// takes all its videos.
 	Start bool
+	// Existing is a file downloaded before: instead of downloading, the
+	// job makes its subtitles. It starts by itself.
+	Existing string
 }
 
 // ItemView is a snapshot of one video.
@@ -156,4 +162,6 @@ type JobView struct {
 	Size      int64
 	Err       string
 	Added     time.Time
+	// Existing is the file of a subtitles-only job.
+	Existing string
 }

@@ -136,6 +136,20 @@ func main() {
 				})
 			}()
 		},
+		AddExisting: func(path string, done func(error)) {
+			go func() {
+				ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
+				defer cancel()
+				link, err := core.SourceURL(ctx, tools.Manager().Path("ffprobe"), path)
+				mygo.RunOnMain(func() {
+					if err == nil {
+						queue.Add(link, engine.AddOptions{Existing: path})
+					}
+					done(err)
+					redraw()
+				})
+			}()
+		},
 		PickPath: func(title, current string, folder bool, done func(string)) {
 			go func() {
 				paths, err := mygo.Dialog.Open(mygo.OpenDialogOptions{

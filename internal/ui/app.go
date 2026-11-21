@@ -63,6 +63,9 @@ type Deps struct {
 	// TestModel translates a sample line with the translation settings and
 	// calls done on the main thread.
 	TestModel func(s config.TranslationSettings, apiKey string, done func(result string, elapsed time.Duration, err error))
+	// AddExisting finds where a downloaded video came from and queues a
+	// job that makes its subtitles; done runs on the main thread.
+	AddExisting func(path string, done func(err error))
 }
 
 // App is the state of the main window.

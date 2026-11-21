@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"os"
 	"strconv"
 	"strings"
 	"sync"
@@ -49,6 +50,7 @@ type job struct {
 	preset    string
 	custom    *ytdlp.FormatOptions
 	autoStart bool
+	existing  string // a file downloaded before, for subtitles only
 	filters   ytdlp.InputFilterOptions
 	added     time.Time
 	log       []string
@@ -144,7 +146,8 @@ func (e *Engine) Add(url string, o AddOptions) string {
 	e.mu.Lock()
 	j := &job{
 		id: e.newID("j"), url: strings.TrimSpace(url), phase: StatusFetching, preset: preset,
-		autoStart: o.Start, filters: formats.InputFilters(settings.InputFilters), added: time.Now(),
+		autoStart: o.Start || o.Existing != "", existing: o.Existing,
+		filters: formats.InputFilters(settings.InputFilters), added: time.Now(),
 	}
 	j.fetchCtx, j.fetchCancel = context.WithCancel(context.Background())
 	j.items = []*item{e.newItem(j.url, -1)}
@@ -576,6 +579,10 @@ func (e *Engine) download(ctx context.Context, j *job, it *item) {
 			return
 		}
 	}
+	if j.existing != "" {
+		e.subtitlesOnly(ctx, j, it)
+		return
+	}
 	settings := e.d.Settings()
 	e.mu.Lock()
 	if !e.alive(j) || it.status != StatusQueued {
@@ -632,11 +639,36 @@ func (e *Engine) download(ctx context.Context, j *job, it *item) {
 	e.finishDownload(ctx, j, it, code, err)
 }
 
+// subtitlesOnly makes the subtitles of a file downloaded before.
+func (e *Engine) subtitlesOnly(ctx context.Context, j *job, it *item) {
+	e.mu.Lock()
+	if !e.alive(j) || it.status != StatusQueued {
+		e.mu.Unlock()
+		return
+	}
+	it.status, it.stage = StatusDownloading, ytdlp.StageTranslating
+	it.destination = ytdlp.Destination{Path: j.existing, Confidence: 100}
+	e.mu.Unlock()
+	e.changed()
+	e.appendLog(j, "[subtitles] Making subtitles for "+j.existing)
+	if _, err := os.Stat(j.existing); err != nil {
+		e.finishDownload(ctx, j, it, -1, fmt.Errorf("找不到视频文件：%w", err))
+		return
+	}
+	if e.d.AfterDownload != nil {
+		e.afterDownload(ctx, j, it, ytdlp.TrackBoth)
+	}
+	e.finishDownload(ctx, j, it, 0, nil)
+}
+
 // afterDownload runs the AfterDownload step, showing its stage, progress,
 // log and warnings on the item.
 func (e *Engine) afterDownload(ctx context.Context, j *job, it *item, track ytdlp.TrackType) {
 	e.mu.Lock()
-	fin := Finished{JobID: j.id, ItemID: it.id, URL: it.url, Destination: it.destination.Path, TrackType: track, Video: it.video}
+	fin := Finished{
+		JobID: j.id, ItemID: it.id, URL: it.url, Destination: it.destination.Path, TrackType: track, Video: it.video,
+		SubtitlesOnly: j.existing != "",
+	}
 	if it.video != nil {
 		fin.Title = it.video.Title
 	}

@@ -292,6 +292,19 @@ func (a *App) pathField(c *ui.Context, label string, value *string, folder bool,
 	}
 }
 
+// existingButton picks a downloaded video to make subtitles for.
+func (a *App) existingButton(c *ui.Context) func() {
+	return func() {
+		if a.deps.PickPath != nil && a.deps.AddExisting != nil && ui.Button(c, "选择视频…").Height(32).Clicked() {
+			a.deps.PickPath("选择要补字幕的视频", "", false, func(path string) {
+				if path != "" {
+					a.addExisting(path)
+				}
+			})
+		}
+	}
+}
+
 // modelField edits the translation model, with a button that fetches the
 // API's models into a list to choose from.
 func (a *App) modelField(c *ui.Context, p palette) func() {
@@ -444,6 +457,7 @@ func (a *App) settingRows(c *ui.Context, p palette) []settingRow {
 		{subtitles, "思考强度", "推理模型思考得越深，翻译越慢、费用越高。模型不支持时请选“默认”。", "翻译 思考 推理 reasoning effort", choice(c, "思考强度", &s.Translation.ReasoningEffort, []string{"", "none", "minimal", "low", "medium", "high"}, []string{"默认", "关闭思考", "最低", "低", "中", "高"}, 150), false},
 		{subtitles, "目标语言", "翻译成的语言。", "翻译 language", textField(c, "目标语言", &s.Translation.TargetLanguage, "简体中文", 200), false},
 		{subtitles, "高质量模式", "翻译前先让 AI 通读全部字幕，整理出主题和术语表，人名和专有名词更准、前后一致。每个视频多一次请求。", "翻译 高质量 术语 质量", toggle(c, "高质量模式", &s.Translation.HighQuality), false},
+		{subtitles, "为已有视频补字幕", "选择下载过的视频，按上面的设置生成双语字幕，保存在视频旁边；也可以把视频文件拖进下载队列。视频里要记录了原链接（下载时写入元数据即可）。", "补字幕 翻译 已有 本地 视频 文件", a.existingButton(c), false},
 		{subtitles, "API Key", "保存在系统凭据中。", "翻译 密钥 key", a.secretField(c, "API Key", secrets.TranslationAPIKey, false, "sk-…"), false},
 
 		{network, "从浏览器读取 Cookie", "用浏览器里的登录状态下载需要登录的视频。", "cookie 登录 浏览器", choice(c, "从浏览器读取 Cookie", &s.Auth.CookieBrowser, []string{"none", "chrome", "edge", "firefox", "brave", "opera", "vivaldi", "chromium"}, []string{"不使用", "Chrome", "Edge", "Firefox", "Brave", "Opera", "Vivaldi", "Chromium"}, 150), false},

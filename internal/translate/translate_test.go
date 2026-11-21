@@ -3,6 +3,7 @@ package translate
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -483,5 +484,58 @@ func TestPartialTranslation(t *testing.T) {
 	AfterDownload(context.Background(), env(t, srv, &subRunner{}), d, rec.reporter())
 	if len(rec.warnings) != 1 || rec.warnings[0] != CodePartial {
 		t.Fatalf("warnings %q", rec.warnings)
+	}
+}
+
+func TestCheckpointResumes(t *testing.T) {
+	var mu sync.Mutex
+	calls := 0
+	fail := true
+	srv := chatServer(t, func(lines []string) (int, string) {
+		mu.Lock()
+		defer mu.Unlock()
+		calls++
+		if fail && strings.Contains(strings.Join(lines, "|"), "Bye") {
+			return http.StatusBadRequest, "stop here"
+		}
+		out := make([]string, len(lines))
+		for i := range lines {
+			out[i] = "译" + lines[i]
+		}
+		b, _ := json.Marshal(out)
+		return http.StatusOK, string(b)
+	})
+	e := env(t, srv, nil)
+	e.CacheDir = t.TempDir()
+	texts := make([]string, 0, 300)
+	for i := range 300 {
+		texts = append(texts, fmt.Sprintf("line %d", i))
+	}
+	texts[200] = "Bye" // the second batch fails outright the first time
+	c, _ := chatConfig(e)
+	rec := &recorder{}
+	cp := openCheckpoint(e.CacheDir, "https://v/a\nen", texts, c.target)
+	if _, err := translateCues(context.Background(), e, c, texts, rec.reporter(), cp); err == nil {
+		t.Fatal("first run should stop on the rejected batch")
+	}
+	saved := cp.count()
+	if saved == 0 || saved >= len(makeBatches(texts)) {
+		t.Fatalf("saved %d batches", saved)
+	}
+
+	fail, calls = false, 0
+	cp = openCheckpoint(e.CacheDir, "https://v/a\nen", texts, c.target)
+	out, err := translateCues(context.Background(), e, c, texts, rec.reporter(), cp)
+	if err != nil || out[0] != "译line 0" || out[200] != "译Bye" || out[299] != "译line 299" {
+		t.Fatalf("second run: %v, %q %q", err, out[0], out[200])
+	}
+	if want := len(makeBatches(texts)) - saved; calls != want {
+		t.Errorf("second run sent %d requests, want %d", calls, want)
+	}
+
+	// Other lines or another language start over.
+	if openCheckpoint(e.CacheDir, "https://v/a\nen", texts[1:], c.target).count() != 0 ||
+		openCheckpoint(e.CacheDir, "https://v/a\nen", texts, "English").count() != 0 {
+		t.Error("checkpoint reused for different lines or language")
 	}
 }

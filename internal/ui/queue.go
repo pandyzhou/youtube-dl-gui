@@ -3,12 +3,14 @@ package ui
 import (
 	"fmt"
 	"net/url"
+	"path/filepath"
 	"strings"
 
 	"github.com/egoist/mygo/transfer"
 	"github.com/egoist/mygo/ui"
 	"github.com/egoist/mygo/ui/netimage"
 
+	"github.com/pandyzhou/youtube-dl-gui/internal/core"
 	"github.com/pandyzhou/youtube-dl-gui/internal/engine"
 	"github.com/pandyzhou/youtube-dl-gui/internal/formats"
 	"github.com/pandyzhou/youtube-dl-gui/internal/ytdlp"
@@ -88,6 +90,41 @@ func (a *App) AddDropped(text string) int {
 	return len(urls)
 }
 
+// addExisting queues subtitles for a video downloaded before and shows the
+// queue.
+func (a *App) addExisting(path string) {
+	if a.deps.AddExisting == nil {
+		return
+	}
+	name := filepath.Base(path)
+	a.q.notice = "正在读取“" + name + "”…"
+	a.router.Replace("/queue")
+	a.deps.AddExisting(path, func(err error) {
+		if err != nil {
+			a.q.notice = "无法为“" + name + "”补字幕：" + err.Error()
+			return
+		}
+		a.q.notice = "已加入补字幕：" + name
+	})
+}
+
+// droppedFiles are the local files in a dropped URI list.
+func droppedFiles(uriList string) []string {
+	var files []string
+	for _, line := range strings.Split(uriList, "\n") {
+		u, err := url.Parse(strings.TrimSpace(line))
+		if err != nil || u.Scheme != "file" || u.Path == "" {
+			continue
+		}
+		p := u.Path
+		if len(p) > 2 && p[0] == '/' && p[2] == ':' { // /C:/x
+			p = p[1:]
+		}
+		files = append(files, filepath.FromSlash(p))
+	}
+	return files
+}
+
 // SetLink fills the link input, as clipboard auto-fill does.
 func (a *App) SetLink(link string) { a.q.link = link }
 
@@ -113,12 +150,26 @@ func (a *App) queuePage(c *ui.Context, p palette) {
 		root.Border(2, c.Theme().Accent)
 	}
 	if drop, ok := ui.DropData(root, opts); ok {
-		text, err := drop.Data.Read(transfer.Text)
-		if err != nil {
-			text, _ = drop.Data.Read(transfer.URIList)
+		var videos []string
+		if uris, err := drop.Data.Read(transfer.URIList); err == nil {
+			for _, f := range droppedFiles(string(uris)) {
+				if core.IsVideoFile(f) {
+					videos = append(videos, f)
+				}
+			}
 		}
-		if n := a.AddDropped(string(text)); n == 0 {
-			a.q.notice = "拖入的内容里没有链接。"
+		if len(videos) > 0 {
+			for _, v := range videos {
+				a.addExisting(v)
+			}
+		} else {
+			text, err := drop.Data.Read(transfer.Text)
+			if err != nil {
+				text, _ = drop.Data.Read(transfer.URIList)
+			}
+			if n := a.AddDropped(string(text)); n == 0 {
+				a.q.notice = "拖入的内容里没有链接。拖入下载过的视频文件可以补字幕。"
+			}
 		}
 	}
 	root.Children(func() {
@@ -414,6 +465,9 @@ func (a *App) jobActions(c *ui.Context, p palette, j engine.JobView) {
 	ui.Row(c).Gap(6).AlignItems(ui.Center).Children(func() {
 		switch j.Status {
 		case engine.StatusReady:
+			if j.Existing != "" {
+				break
+			}
 			preset := formats.PresetByID(j.Preset).Label
 			if j.Custom != nil {
 				preset = formats.PresetByID(formats.PresetCustom).Label

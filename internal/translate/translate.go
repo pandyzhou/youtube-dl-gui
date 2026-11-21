@@ -90,6 +90,9 @@ type Env struct {
 	Client   *http.Client
 	// Backoff is the delay before retry n (1, 2): 2^n seconds by default.
 	Backoff func(attempt int) time.Duration
+	// CacheDir keeps checkpoints of unfinished translations; "" keeps
+	// none.
+	CacheDir string
 }
 
 type failure struct {
@@ -101,7 +104,7 @@ func (f *failure) Error() string { return f.detail }
 // AfterDownload writes the bilingual subtitles of a finished video when
 // translation is on; problems become warnings on the item.
 func AfterDownload(ctx context.Context, env Env, d engine.Finished, r engine.Reporter) {
-	if !env.Settings.Translation.Enabled || d.TrackType == ytdlp.TrackAudio {
+	if (!env.Settings.Translation.Enabled && !d.SubtitlesOnly) || d.TrackType == ytdlp.TrackAudio {
 		return
 	}
 	r.Stage(ytdlp.StageTranslating)
@@ -168,20 +171,32 @@ func run(ctx context.Context, env Env, d engine.Finished, r engine.Reporter) (st
 		return "", 0, &failure{CodeSourceMissing, "字幕是空的。"}
 	}
 	chat.video = videoContext(d)
+	chat.log = r.Log
+	texts := make([]string, len(cues))
+	for i, cue := range cues {
+		texts[i] = cue.Text
+	}
+	cp := openCheckpoint(env.CacheDir, d.URL+"\n"+source.Language, texts, chat.target)
 	if env.Settings.Translation.HighQuality {
-		r.Log("[translate] Reading the whole transcript for a topic and glossary")
-		notes, err := readTranscript(ctx, env, chat, cues)
-		switch {
-		case ctx.Err() != nil:
-			return "", 0, ctx.Err()
-		case err != nil:
-			r.Log("[translate] Going on without a glossary: " + err.Error())
-		default:
+		if notes := cp.notes(); notes != "" {
 			chat.notes = notes
-			r.Log("[translate] " + strings.ReplaceAll(strings.TrimSpace(notes), "\n", " | "))
+			r.Log("[translate] Using the glossary saved by the last run")
+		} else {
+			r.Log("[translate] Reading the whole transcript for a topic and glossary")
+			notes, err := readTranscript(ctx, env, chat, cues)
+			switch {
+			case ctx.Err() != nil:
+				return "", 0, ctx.Err()
+			case err != nil:
+				r.Log("[translate] Going on without a glossary: " + err.Error())
+			default:
+				chat.notes = notes
+				cp.setNotes(notes)
+				r.Log("[translate] " + strings.ReplaceAll(strings.TrimSpace(notes), "\n", " | "))
+			}
 		}
 	}
-	translations, err := translateCues(ctx, env, chat, cues, r)
+	translations, err := translateCues(ctx, env, chat, texts, r, cp)
 	if err != nil {
 		return "", 0, err
 	}
@@ -195,6 +210,9 @@ func run(ctx context.Context, env Env, d engine.Finished, r engine.Reporter) (st
 			untranslated++
 		}
 	}
+	if untranslated == 0 {
+		cp.remove()
+	}
 	return output, untranslated, nil
 }
 
@@ -206,6 +224,14 @@ type chat struct {
 	video string
 	// notes are the topic and glossary of high quality mode.
 	notes string
+	// log writes to the item's log; nil for none.
+	log func(string)
+}
+
+func (c chat) logf(format string, args ...any) {
+	if c.log != nil {
+		c.log("[translate] " + fmt.Sprintf(format, args...))
+	}
 }
 
 func chatConfig(env Env) (chat, error) {
@@ -506,21 +532,30 @@ var errTooLong = errors.New("reply cut off")
 
 // translateCues translates every cue, a few batches at a time; lines that
 // keep failing stay "".
-func translateCues(ctx context.Context, env Env, c chat, cues []Cue, r engine.Reporter) ([]string, error) {
-	texts := make([]string, len(cues))
-	for i, cue := range cues {
-		texts[i] = cue.Text
-	}
+func translateCues(ctx context.Context, env Env, c chat, texts []string, r engine.Reporter, cp *checkpoint) ([]string, error) {
 	batches := makeBatches(texts)
-	out := make([]string, len(cues))
+	out := make([]string, len(texts))
 	var (
 		mu    sync.Mutex
 		done  int
 		fatal error
 		wg    sync.WaitGroup
 	)
+	for _, b := range batches {
+		if lines, ok := cp.batch(b.start, len(b.lines)); ok {
+			copy(out[b.start:], lines)
+			done++
+		}
+	}
+	if done > 0 {
+		c.logf("Going on from the last run: %d of %d batches already translated", done, len(batches))
+		r.Progress(float64(done) / float64(len(batches)) * 100)
+	}
 	sem := make(chan struct{}, concurrency)
 	for _, b := range batches {
+		if _, ok := cp.batch(b.start, len(b.lines)); ok {
+			continue
+		}
 		wg.Add(1)
 		sem <- struct{}{}
 		go func(b batch) {
@@ -528,7 +563,12 @@ func translateCues(ctx context.Context, env Env, c chat, cues []Cue, r engine.Re
 				<-sem
 				wg.Done()
 			}()
+			began := time.Now()
 			lines, err := translateBatch(ctx, env, c, b)
+			if err == nil {
+				cp.save(b.start, lines)
+				c.logf("Lines %d-%d done in %.0fs", b.start+1, b.start+len(b.lines), time.Since(began).Seconds())
+			}
 			mu.Lock()
 			defer mu.Unlock()
 			var f errFatal
@@ -565,8 +605,10 @@ func translateBatch(ctx context.Context, env Env, c chat, b batch) ([]string, er
 	if err == nil || errors.As(err, &f) || len(lines) < 2 {
 		return out, err
 	}
+	c.logf("Lines %d-%d keep failing (%v), translating them in halves", b.start+1, b.start+len(lines), err)
 	half := len(lines) / 2
 	first, err := translateWithRetries(ctx, env, c, batch{
+		start:   b.start,
 		context: b.context,
 		lines:   lines[:half],
 		after:   lines[half:min(half+followLines, len(lines))],
@@ -575,6 +617,7 @@ func translateBatch(ctx context.Context, env Env, c chat, b batch) ([]string, er
 		return nil, err
 	}
 	second, err := translateWithRetries(ctx, env, c, batch{
+		start:   b.start + half,
 		context: lines[max(half-contextLines, 0):half],
 		lines:   lines[half:],
 		after:   b.after,
@@ -600,6 +643,7 @@ func translateWithRetries(ctx context.Context, env Env, c chat, b batch) ([]stri
 			case <-time.After(delay):
 			}
 		}
+		began := time.Now()
 		out, err := request(ctx, env, c, b)
 		var f errFatal
 		switch {
@@ -608,10 +652,14 @@ func translateWithRetries(ctx context.Context, env Env, c chat, b batch) ([]stri
 		case err == nil:
 			last = fmt.Errorf("expected %d lines, got %d", len(lines), len(out))
 		case errors.As(err, &f), errors.Is(err, errTooLong), ctx.Err() != nil:
+			if errors.Is(err, errTooLong) {
+				c.logf("Lines %d-%d: the reply was cut off after %.0fs", b.start+1, b.start+len(lines), time.Since(began).Seconds())
+			}
 			return nil, err
 		default:
 			last = err
 		}
+		c.logf("Lines %d-%d, attempt %d of %d failed after %.0fs: %v", b.start+1, b.start+len(lines), attempt+1, maxAttempts, time.Since(began).Seconds(), last)
 	}
 	return nil, last
 }
