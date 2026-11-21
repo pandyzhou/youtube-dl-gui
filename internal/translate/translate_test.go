@@ -269,6 +269,44 @@ func TestPromptAndContext(t *testing.T) {
 	}
 }
 
+func TestHighQualityMode(t *testing.T) {
+	var mu sync.Mutex
+	var notesAsked bool
+	var batchUser string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		var body struct {
+			Messages []struct{ Content string } `json:"messages"`
+		}
+		json.NewDecoder(r.Body).Decode(&body)
+		system, user := body.Messages[0].Content, body.Messages[1].Content
+		content := `{"topic": "测试视频", "terms": [{"source": "Hello", "target": "哈喽", "note": "greeting"}, {"source": "", "target": "x"}]}`
+		mu.Lock()
+		if strings.Contains(system, "You prepare") {
+			notesAsked = strings.Contains(user, "Transcript:\nHello\nBye\n[music]\n")
+		} else {
+			batchUser = user
+			content = `["哈喽", "再见", "[音乐]"]`
+		}
+		mu.Unlock()
+		resp, _ := json.Marshal(map[string]any{"choices": []map[string]any{{"message": map[string]string{"content": content}, "finish_reason": "stop"}}})
+		w.Write(resp)
+	}))
+	t.Cleanup(srv.Close)
+	e := env(t, srv, &subRunner{})
+	e.Settings.Translation.HighQuality = true
+	rec := &recorder{}
+	AfterDownload(context.Background(), e, finished(t), rec.reporter())
+	if len(rec.warnings) != 0 || !notesAsked {
+		t.Fatalf("warnings %q, notes asked %v", rec.warnings, notesAsked)
+	}
+	if !strings.Contains(batchUser, "Topic: 测试视频\nGlossary, translate these terms this way:\n- Hello → 哈喽 (greeting)\n") {
+		t.Errorf("batch request %q", batchUser)
+	}
+	if _, ok := ParseNotes(`{"topic": "", "terms": []}`); ok {
+		t.Error("empty notes accepted")
+	}
+}
+
 func TestPartialTranslation(t *testing.T) {
 	srv := chatServer(t, func(lines []string) (int, string) {
 		if len(lines) > 1 {

@@ -155,6 +155,9 @@ type TranslationSettings struct {
 	BaseURL        string `json:"baseUrl"`
 	Model          string `json:"model"`
 	TargetLanguage string `json:"targetLanguage"`
+	// HighQuality reads the whole transcript first for a topic and a
+	// glossary that every batch gets.
+	HighQuality bool `json:"highQuality"`
 }
 
 // UpdateSettings turn the automatic updates of the tools and the app on.

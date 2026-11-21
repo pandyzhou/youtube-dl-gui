@@ -366,6 +366,7 @@ func (a *App) settingRows(c *ui.Context, p palette) []settingRow {
 		{subtitles, "接口地址", "OpenAI 兼容接口的地址。", "翻译 api url", textField(c, "接口地址", &s.Translation.BaseURL, "https://api.openai.com/v1", 300), false},
 		{subtitles, "模型", "", "翻译 model", textField(c, "模型", &s.Translation.Model, "gpt-4o-mini", 200), false},
 		{subtitles, "目标语言", "翻译成的语言。", "翻译 language", textField(c, "目标语言", &s.Translation.TargetLanguage, "简体中文", 200), false},
+		{subtitles, "高质量模式", "翻译前先让 AI 通读全部字幕，整理出主题和术语表，人名和专有名词更准、前后一致。每个视频多一次请求。", "翻译 高质量 术语 质量", toggle(c, "高质量模式", &s.Translation.HighQuality), false},
 		{subtitles, "API Key", "保存在系统凭据中。", "翻译 密钥 key", a.secretField(c, "API Key", secrets.TranslationAPIKey, false, "sk-…"), false},
 
 		{network, "从浏览器读取 Cookie", "用浏览器里的登录状态下载需要登录的视频。", "cookie 登录 浏览器", choice(c, "从浏览器读取 Cookie", &s.Auth.CookieBrowser, []string{"none", "chrome", "edge", "firefox", "brave", "opera", "vivaldi", "chromium"}, []string{"不使用", "Chrome", "Edge", "Firefox", "Brave", "Opera", "Vivaldi", "Chromium"}, 150), false},

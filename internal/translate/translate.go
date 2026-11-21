@@ -38,6 +38,9 @@ const (
 	followLines  = 3
 	// descriptionChars bounds the video description sent as context.
 	descriptionChars = 300
+	// transcriptChars bounds the transcript read in high quality mode.
+	transcriptChars = 30000
+	maxTerms        = 20
 	concurrency      = 6
 	maxAttempts      = 3
 	// DefaultTargetLanguage is used when the setting is empty.
@@ -59,6 +62,11 @@ Example, into 简体中文:
 ["so today we're going to look at how the", "new tesla model why handles in the snow", "[music]"]
 Reply:
 ["今天我们来看看", "新款特斯拉 Model Y 在雪地里表现如何", "[音乐]"]`
+
+// notesPrompt asks for the topic and glossary of high quality mode.
+const notesPrompt = `You prepare the translation of a video's subtitles into {target}. Read the transcript the user sends. It may come from automatic speech recognition, without punctuation and with misheard words. Reply with only a JSON object:
+{"topic": "what the video is about, in at most two sentences, in {target}", "terms": [{"source": "a term as it appears in the transcript", "target": "how to write it in {target}, or the original when it should stay as it is", "note": "optional: what it is, or the correct word when it was misheard"}]}
+List at most 20 terms: names of people, places, channels, brands and products, and technical terms whose translation must stay the same throughout. Leave out ordinary words.`
 
 // chineseStyle is added to the prompt for Chinese targets.
 const chineseStyle = "\n- Write Chinese the way people speak it: drop pronouns Chinese would leave out, use Chinese punctuation within a line and no full stop at the end of a line."
@@ -148,6 +156,19 @@ func run(ctx context.Context, env Env, d engine.Finished, r engine.Reporter) (st
 		return "", 0, &failure{CodeSourceMissing, "字幕是空的。"}
 	}
 	chat.video = videoContext(d)
+	if env.Settings.Translation.HighQuality {
+		r.Log("[translate] Reading the whole transcript for a topic and glossary")
+		notes, err := readTranscript(ctx, env, chat, cues)
+		switch {
+		case ctx.Err() != nil:
+			return "", 0, ctx.Err()
+		case err != nil:
+			r.Log("[translate] Going on without a glossary: " + err.Error())
+		default:
+			chat.notes = notes
+			r.Log("[translate] " + strings.ReplaceAll(strings.TrimSpace(notes), "\n", " | "))
+		}
+	}
 	translations, err := translateCues(ctx, env, chat, cues, r)
 	if err != nil {
 		return "", 0, err
@@ -169,6 +190,8 @@ type chat struct {
 	endpoint, model, apiKey, target string
 	// video describes the video (title, channel, description) as context.
 	video string
+	// notes are the topic and glossary of high quality mode.
+	notes string
 }
 
 func chatConfig(env Env) (chat, error) {
@@ -477,12 +500,101 @@ func jsonArray(lines []string) string {
 	return string(b)
 }
 
+// notes is the reply to notesPrompt.
+type notes struct {
+	Topic string `json:"topic"`
+	Terms []struct {
+		Source string `json:"source"`
+		Target string `json:"target"`
+		Note   string `json:"note"`
+	} `json:"terms"`
+}
+
+// readTranscript has the model read the transcript (its start, when it is
+// long) and returns the topic and glossary as text for the batches.
+func readTranscript(ctx context.Context, env Env, c chat, cues []Cue) (string, error) {
+	var transcript strings.Builder
+	chars := 0
+	for _, cue := range cues {
+		line := strings.Join(strings.Fields(cue.Text), " ")
+		if chars += len([]rune(line)) + 1; chars > transcriptChars {
+			transcript.WriteString("(the rest is left out)\n")
+			break
+		}
+		transcript.WriteString(line + "\n")
+	}
+	user := "Transcript:\n" + transcript.String()
+	if c.video != "" {
+		user = "About the video:\n" + c.video + "\n" + user
+	}
+	system := strings.ReplaceAll(notesPrompt, "{target}", c.target)
+	var last error
+	for attempt := 0; attempt < maxAttempts; attempt++ {
+		content, err := complete(ctx, env, c, system, user)
+		var f errFatal
+		if errors.As(err, &f) || ctx.Err() != nil {
+			return "", err
+		}
+		if err != nil {
+			last = err
+			continue
+		}
+		if text, ok := ParseNotes(content); ok {
+			return text, nil
+		}
+		last = errors.New("reply was not the expected JSON object")
+	}
+	return "", last
+}
+
+// ParseNotes turns a reply to notesPrompt into text for the batches.
+func ParseNotes(content string) (string, bool) {
+	if _, after, ok := strings.Cut(content, "</think>"); ok {
+		content = after
+	}
+	start, end := strings.Index(content, "{"), strings.LastIndex(content, "}")
+	if start < 0 || end <= start {
+		return "", false
+	}
+	var n notes
+	if err := json.Unmarshal([]byte(content[start:end+1]), &n); err != nil {
+		return "", false
+	}
+	var b strings.Builder
+	if t := strings.TrimSpace(n.Topic); t != "" {
+		b.WriteString("Topic: " + t + "\n")
+	}
+	count := 0
+	for _, t := range n.Terms {
+		src, tgt := strings.TrimSpace(t.Source), strings.TrimSpace(t.Target)
+		if src == "" || tgt == "" || count == maxTerms {
+			continue
+		}
+		if count == 0 {
+			b.WriteString("Glossary, translate these terms this way:\n")
+		}
+		count++
+		b.WriteString("- " + src + " → " + tgt)
+		if note := strings.TrimSpace(t.Note); note != "" {
+			b.WriteString(" (" + note + ")")
+		}
+		b.WriteString("\n")
+	}
+	if b.Len() == 0 {
+		return "", false
+	}
+	return b.String(), true
+}
+
 // request sends one batch. The lines to translate come last, after the
 // context.
 func request(ctx context.Context, env Env, c chat, b batch) ([]string, error) {
 	var user strings.Builder
 	if c.video != "" {
 		user.WriteString("About the video, for context only:\n" + c.video + "\n")
+	}
+	if c.notes != "" {
+		user.WriteString("Notes from reading the whole transcript:\n" + c.notes + "\n")
 	}
 	if len(b.context) > 0 {
 		user.WriteString("Lines just before, for context only, do not translate:\n" + jsonArray(b.context) + "\n\n")
@@ -491,34 +603,47 @@ func request(ctx context.Context, env Env, c chat, b batch) ([]string, error) {
 		user.WriteString("Lines just after, for context only, do not translate:\n" + jsonArray(b.after) + "\n\n")
 	}
 	fmt.Fprintf(&user, "Translate these %d lines:\n%s", len(b.lines), jsonArray(b.lines))
+	content, err := complete(ctx, env, c, prompt(c.target), user.String())
+	if err != nil {
+		return nil, err
+	}
+	out, ok := ParseTranslations(content)
+	if !ok {
+		return nil, errors.New("reply was not a JSON array")
+	}
+	return out, nil
+}
+
+// complete sends one chat request and returns the reply's text.
+func complete(ctx context.Context, env Env, c chat, system, user string) (string, error) {
 	body, _ := json.Marshal(map[string]any{
 		"model": c.model,
 		"messages": []map[string]string{
-			{"role": "system", "content": prompt(c.target)},
-			{"role": "user", "content": user.String()},
+			{"role": "system", "content": system},
+			{"role": "user", "content": user},
 		},
 	})
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, c.endpoint, bytes.NewReader(body))
 	if err != nil {
-		return nil, errFatal{err.Error()}
+		return "", errFatal{err.Error()}
 	}
 	req.Header.Set("Authorization", "Bearer "+c.apiKey)
 	req.Header.Set("Content-Type", "application/json")
 	resp, err := env.Client.Do(req)
 	if err != nil {
-		return nil, err
+		return "", err
 	}
 	defer resp.Body.Close()
 	data, err := io.ReadAll(io.LimitReader(resp.Body, 16<<20))
 	if err != nil {
-		return nil, err
+		return "", err
 	}
 	if resp.StatusCode != http.StatusOK {
 		msg := fmt.Sprintf("HTTP %d: %s", resp.StatusCode, truncate(string(data), 300))
 		if resp.StatusCode == http.StatusTooManyRequests || resp.StatusCode >= 500 {
-			return nil, errors.New(msg)
+			return "", errors.New(msg)
 		}
-		return nil, errFatal{msg}
+		return "", errFatal{msg}
 	}
 	var reply struct {
 		Choices []struct {
@@ -529,19 +654,15 @@ func request(ctx context.Context, env Env, c chat, b batch) ([]string, error) {
 		} `json:"choices"`
 	}
 	if err := json.Unmarshal(data, &reply); err != nil {
-		return nil, err
+		return "", err
 	}
 	if len(reply.Choices) == 0 {
-		return nil, errors.New("the reply had no choices")
+		return "", errors.New("the reply had no choices")
 	}
 	if reply.Choices[0].FinishReason == "length" {
-		return nil, errTooLong
+		return "", errTooLong
 	}
-	out, ok := ParseTranslations(reply.Choices[0].Message.Content)
-	if !ok {
-		return nil, errors.New("reply was not a JSON array")
-	}
-	return out, nil
+	return reply.Choices[0].Message.Content, nil
 }
 
 // ParseTranslations pulls the JSON array of strings out of a model reply,
