@@ -361,3 +361,27 @@ func TestInputArgs(t *testing.T) {
 	expect(t, InputArgs(PlaylistModeAll, config.InputSettings{PreferVideoInMixedLinks: true}), "--yes-playlist")
 	expect(t, InputArgs(PlaylistModeSingle, config.InputSettings{}), "--no-playlist")
 }
+
+func TestDownloadNetworkArgsDashy(t *testing.T) {
+	cases := []struct{ extractor, want string }{
+		{"", "youtube:formats=dashy"},
+		{"youtube:player_client=web", "youtube:player_client=web;formats=dashy"},
+		{"youtube:formats=duplicate", "youtube:formats=duplicate"},
+		{"generic:impersonate", "generic:impersonate|youtube:formats=dashy"},
+	}
+	for _, c := range cases {
+		args := DownloadNetworkArgs(config.NetworkSettings{ExtractorArgs: c.extractor}, 8)
+		var got []string
+		for i, a := range args {
+			if a == "--extractor-args" {
+				got = append(got, args[i+1])
+			}
+		}
+		if strings.Join(got, "|") != c.want {
+			t.Errorf("%q: %q, want %q", c.extractor, got, c.want)
+		}
+	}
+	if args := DownloadNetworkArgs(config.NetworkSettings{}, 1); len(args) != 0 {
+		t.Errorf("one fragment at a time: %q", args)
+	}
+}

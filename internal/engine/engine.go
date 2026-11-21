@@ -553,7 +553,7 @@ func (e *Engine) downloadArgs(j *job, it *item, settings config.Settings) ([]str
 	args := []string{"--encoding", "utf-8"}
 	args = append(args, ytdlp.ProgressArgs()...)
 	args = append(args, ytdlp.PerformanceArgs(settings.Performance.ConcurrentFragments)...)
-	args = append(args, ytdlp.NetworkArgs(settings.Network)...)
+	args = append(args, ytdlp.DownloadNetworkArgs(settings.Network, settings.Performance.ConcurrentFragments)...)
 	args = append(args, ytdlp.AuthArgs(settings.Auth, e.secrets())...)
 	args = append(args, ytdlp.SubtitleArgs(settings.Subtitles, inventory)...)
 	args = append(args, ytdlp.FormatArgs(c.Format, output)...)

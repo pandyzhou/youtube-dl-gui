@@ -53,6 +53,38 @@ func NetworkArgs(network config.NetworkSettings) []string {
 	return args
 }
 
+// DownloadNetworkArgs are NetworkArgs for a download. With several
+// fragments at once, YouTube's plain HTTPS formats are fetched as DASH
+// fragments (youtube:formats=dashy) so the fragments run in parallel;
+// otherwise yt-dlp downloads them over a single connection.
+func DownloadNetworkArgs(network config.NetworkSettings, fragments int) []string {
+	if fragments > 1 {
+		network.ExtractorArgs = withDashy(network.ExtractorArgs)
+	}
+	return NetworkArgs(network)
+}
+
+// withDashy adds formats=dashy to the youtube extractor arguments, unless
+// they already choose formats.
+func withDashy(value string) string {
+	lines := ExtractorArgLines(value)
+	for i, line := range lines {
+		ie, args, _ := strings.Cut(line, ":")
+		if !strings.EqualFold(strings.TrimSpace(ie), "youtube") {
+			continue
+		}
+		switch {
+		case strings.Contains(args, "formats="):
+		case strings.TrimSpace(args) == "":
+			lines[i] = "youtube:formats=dashy"
+		default:
+			lines[i] = line + ";formats=dashy"
+		}
+		return strings.Join(lines, "\n")
+	}
+	return strings.Join(append(lines, "youtube:formats=dashy"), "\n")
+}
+
 // ExtractorArgLines returns the trimmed non-empty lines of value.
 func ExtractorArgLines(value string) []string {
 	var lines []string
