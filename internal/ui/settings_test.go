@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/egoist/mygo/ui"
 
@@ -131,6 +132,20 @@ func TestFetchModels(t *testing.T) {
 	}
 	if !tt.HasText("选择模型…") {
 		t.Errorf("no model list, texts %q", tt.Texts())
+	}
+
+	tested := false
+	a.deps.TestModel = func(s config.TranslationSettings, apiKey string, done func(string, time.Duration, error)) {
+		tested = s.BaseURL == "https://api.example.com/v1" && apiKey == "sk-test"
+		done("大家好", 1500*time.Millisecond, nil)
+	}
+	tt.Frame()
+	if err := tt.Click("测试"); err != nil {
+		t.Fatal(err)
+	}
+	tt.Frame()
+	if !tested || !tt.HasText("测试成功，用时 1.5 秒：大家好") {
+		t.Errorf("tested %v, texts %q", tested, tt.Texts())
 	}
 }
 

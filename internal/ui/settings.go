@@ -1,6 +1,7 @@
 package ui
 
 import (
+	"fmt"
 	"reflect"
 	"slices"
 	"strconv"
@@ -34,6 +35,11 @@ type settingsState struct {
 	models     []string
 	modelsBusy bool
 	modelsErr  string
+
+	// The model test's result.
+	testBusy   bool
+	testResult string
+	testErr    string
 }
 
 // settingRow is one setting: where it is, what it is called and explained
@@ -319,12 +325,33 @@ func (a *App) modelField(c *ui.Context, p palette) func() {
 						*model = current
 					}
 				}
+				test := "测试"
+				if a.s.testBusy {
+					test = "正在测试…"
+				}
+				if a.deps.TestModel != nil && ui.Button(c, test).Height(32).Disabled(a.s.testBusy).Clicked() {
+					a.s.testBusy, a.s.testResult, a.s.testErr = true, "", ""
+					a.deps.TestModel(a.s.draft.Translation, a.s.secrets[secrets.TranslationAPIKey], func(result string, elapsed time.Duration, err error) {
+						a.s.testBusy = false
+						if err != nil {
+							a.s.testErr = "测试失败：" + err.Error()
+							return
+						}
+						a.s.testResult = fmt.Sprintf("测试成功，用时 %.1f 秒：%s", elapsed.Seconds(), result)
+					})
+				}
 			})
 			switch {
 			case a.s.modelsErr != "":
 				ui.Text(c, a.s.modelsErr).FontSize(12).TextColor(c.Theme().Danger)
 			case len(a.s.models) > 0:
 				ui.Text(c, "接口提供 "+strconv.Itoa(len(a.s.models))+" 个模型。").FontSize(12).TextColor(p.muted)
+			}
+			switch {
+			case a.s.testErr != "":
+				ui.Text(c, a.s.testErr).FontSize(12).TextColor(c.Theme().Danger)
+			case a.s.testResult != "":
+				ui.Text(c, a.s.testResult).FontSize(12).TextColor(p.muted)
 			}
 		})
 	}
@@ -413,7 +440,7 @@ func (a *App) settingRows(c *ui.Context, p palette) []settingRow {
 		{subtitles, "字幕格式优先级", "按顺序选第一个可用的格式。", "srt vtt ass", csvField(c, "字幕格式优先级", &s.Subtitles.FormatPreference, "srt, vtt"), false},
 		{subtitles, "AI 双语字幕", "", "翻译 双语", toggle(c, "AI 双语字幕 ", &s.Translation.Enabled), false},
 		{subtitles, "接口地址", "OpenAI 兼容接口的地址。", "翻译 api url", textField(c, "接口地址", &s.Translation.BaseURL, "https://api.openai.com/v1", 300), false},
-		{subtitles, "模型", "可以手动填写，或从接口获取可用的模型。", "翻译 model 模型 获取", a.modelField(c, p), true},
+		{subtitles, "模型", "可以手动填写，或从接口获取可用的模型；“测试”会用当前设置翻译一句话。", "翻译 model 模型 获取", a.modelField(c, p), true},
 		{subtitles, "思考强度", "推理模型思考得越深，翻译越慢、费用越高。模型不支持时请选“默认”。", "翻译 思考 推理 reasoning effort", choice(c, "思考强度", &s.Translation.ReasoningEffort, []string{"", "none", "minimal", "low", "medium", "high"}, []string{"默认", "关闭思考", "最低", "低", "中", "高"}, 150), false},
 		{subtitles, "目标语言", "翻译成的语言。", "翻译 language", textField(c, "目标语言", &s.Translation.TargetLanguage, "简体中文", 200), false},
 		{subtitles, "高质量模式", "翻译前先让 AI 通读全部字幕，整理出主题和术语表，人名和专有名词更准、前后一致。每个视频多一次请求。", "翻译 高质量 术语 质量", toggle(c, "高质量模式", &s.Translation.HighQuality), false},

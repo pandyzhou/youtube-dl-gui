@@ -122,6 +122,20 @@ func main() {
 				})
 			}()
 		},
+		TestModel: func(s config.TranslationSettings, apiKey string, done func(string, time.Duration, error)) {
+			client := httpx.Client(c.Settings().Network, 2*time.Minute)
+			go func() {
+				ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
+				defer cancel()
+				start := time.Now()
+				result, err := translate.TestModel(ctx, client, s, apiKey)
+				elapsed := time.Since(start)
+				mygo.RunOnMain(func() {
+					done(result, elapsed, err)
+					redraw()
+				})
+			}()
+		},
 		PickPath: func(title, current string, folder bool, done func(string)) {
 			go func() {
 				paths, err := mygo.Dialog.Open(mygo.OpenDialogOptions{

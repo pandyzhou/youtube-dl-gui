@@ -2,6 +2,8 @@
 package ui
 
 import (
+	"time"
+
 	"github.com/egoist/mygo/ui"
 
 	"github.com/pandyzhou/youtube-dl-gui/internal/config"
@@ -58,6 +60,9 @@ type Deps struct {
 	// ListModels asks the translation API for its models and calls done on
 	// the main thread.
 	ListModels func(baseURL, apiKey string, done func(models []string, err error))
+	// TestModel translates a sample line with the translation settings and
+	// calls done on the main thread.
+	TestModel func(s config.TranslationSettings, apiKey string, done func(result string, elapsed time.Duration, err error))
 }
 
 // App is the state of the main window.

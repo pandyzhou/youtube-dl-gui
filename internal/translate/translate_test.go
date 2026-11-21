@@ -430,6 +430,26 @@ func TestListModelsAndEffort(t *testing.T) {
 	}
 }
 
+func TestModelTest(t *testing.T) {
+	srv := chatServer(t, func(lines []string) (int, string) {
+		if len(lines) != 1 || lines[0] != TestLine {
+			return http.StatusOK, `["a", "b"]`
+		}
+		return http.StatusOK, `["大家好"]`
+	})
+	s := config.TranslationSettings{BaseURL: srv.URL + "/v1", Model: "m"}
+	if got, err := TestModel(context.Background(), srv.Client(), s, "sk-test"); err != nil || got != "大家好" {
+		t.Errorf("test %q, %v", got, err)
+	}
+	if _, err := TestModel(context.Background(), srv.Client(), s, "sk-wrong"); err == nil {
+		t.Error("wrong key passed")
+	}
+	s.Model = ""
+	if _, err := TestModel(context.Background(), srv.Client(), s, "sk-test"); err == nil || !strings.Contains(err.Error(), "模型") {
+		t.Errorf("no model: %v", err)
+	}
+}
+
 func TestPartialTranslation(t *testing.T) {
 	srv := chatServer(t, func(lines []string) (int, string) {
 		if len(lines) > 1 {

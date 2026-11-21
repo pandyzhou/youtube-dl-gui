@@ -321,6 +321,30 @@ func ListModels(ctx context.Context, client *http.Client, base, apiKey string) (
 	return models, nil
 }
 
+// TestLine is what TestModel translates.
+const TestLine = "Hey everyone, welcome back to the channel. Today we're testing something new."
+
+// TestModel translates TestLine with the translation settings, as the
+// settings page's test.
+func TestModel(ctx context.Context, client *http.Client, s config.TranslationSettings, apiKey string) (string, error) {
+	env := Env{APIKey: apiKey, Client: client}
+	env.Settings.Translation = s
+	c, err := chatConfig(env)
+	if err != nil {
+		return "", err
+	}
+	out, err := request(ctx, env, c, batch{lines: []string{TestLine}})
+	switch {
+	case errors.Is(err, errTooLong):
+		return "", errors.New("回复太长被截断了，可以调低思考强度")
+	case err != nil:
+		return "", err
+	case len(out) != 1 || strings.TrimSpace(out[0]) == "":
+		return "", fmt.Errorf("模型返回了 %d 行译文，应该是 1 行", len(out))
+	}
+	return strings.TrimSpace(out[0]), nil
+}
+
 // ChatCompletionsURL is {base}/chat/completions, unless the address
 // already ends with that path.
 func ChatCompletionsURL(base string) (string, bool) {
