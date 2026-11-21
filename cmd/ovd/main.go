@@ -53,7 +53,9 @@ func main() {
 	}
 	// The update window, drawn natively: checks a day apart when updates
 	// are on (desktop.apply), and on demand from the about page.
-	mygo.Use(native.Plugin)
+	// The app shows only Simplified Chinese, so the update window does too,
+	// whatever the system's language.
+	mygo.Use(native.New(updater.Options{Language: "zh-Hans"}))
 
 	dirs := resolveDirs()
 	if closer, err := core.SetupLogging(dirs.Logs); err == nil {
