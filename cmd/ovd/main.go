@@ -32,6 +32,8 @@ func main() {
 			MinWidth:  760,
 			MinHeight: 560,
 			StateKey:  "main",
+			// Mica behind the sidebar on Windows 11 22H2+; opaque elsewhere.
+			Vibrancy:  mygo.VibrancySidebar,
 			Content:   ui.View(app.View),
 		})
 	})

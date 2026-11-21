@@ -30,9 +30,14 @@ func New() *App {
 // View builds the main window.
 func (a *App) View(c *ui.Context) {
 	p := applyTheme(c)
+	// Over the window material (Mica on Windows 11) the root stays clear so
+	// the sidebar shows it; the content draws its own opaque background.
+	if c.Vibrancy() {
+		c.Root().Background(ui.Transparent)
+	}
 	ui.Row(c).Fill().AlignItems(ui.Stretch).Children(func() {
 		a.sidebar(c, p)
-		ui.Column(c).Grow(1).AlignItems(ui.Stretch).Children(func() {
+		ui.Column(c).Grow(1).AlignItems(ui.Stretch).Background(p.content).Children(func() {
 			a.router.View(c, func(r *ui.Route) {
 				switch {
 				case r.Match("/queue"):
@@ -53,15 +58,18 @@ func (a *App) View(c *ui.Context) {
 }
 
 func (a *App) sidebar(c *ui.Context, p palette) {
-	ui.Column(c).Width(200).AlignItems(ui.Stretch).Background(p.sidebar).
-		Padding(16, 10).Gap(12).Children(func() {
+	col := ui.Column(c).Width(220).AlignItems(ui.Stretch).Padding(16, 12).Gap(12)
+	if !c.Vibrancy() {
+		col.Background(p.sidebar)
+	}
+	col.Children(func() {
 		ui.Text(c, "Open Video Downloader").Bold().Padding(0, 8)
 		page := a.router.Path()
 		if ui.Sidebar(c, &page, func() {
 			ui.SidebarItem(c, "/queue", iconQueue, "下载队列")
 			ui.SidebarItem(c, "/settings", iconSettings, "设置")
 			ui.SidebarItem(c, "/about", iconInfo, "关于")
-		}).Grow(1).Changed() {
+		}).Background(ui.Transparent).Grow(1).Changed() {
 			a.router.Push(page)
 		}
 		ui.Text(c, "v"+Version).FontSize(12).TextColor(p.muted).Padding(0, 8)
@@ -107,7 +115,7 @@ func (a *App) placeholderPage(c *ui.Context, p palette, title, body string) {
 func (a *App) aboutPage(c *ui.Context, p palette) {
 	ui.Column(c).Fill().AlignItems(ui.Stretch).Padding(20, 24).Gap(16).Children(func() {
 		a.pageHeader(c, p, "关于", "")
-		ui.Column(c).Gap(6).Padding(16).Radius(12).Background(p.surface).Border(1, p.border).Children(func() {
+		ui.Column(c).Gap(6).Padding(16).Radius(10).Background(p.surface).Border(1, p.border).Children(func() {
 			ui.Text(c, "Open Video Downloader").Bold()
 			ui.Text(c, "版本 "+Version).TextColor(p.muted)
 			ui.Text(c, "基于 yt-dlp 的视频下载工具，界面由 MyGo 原生绘制。").TextColor(p.muted)
