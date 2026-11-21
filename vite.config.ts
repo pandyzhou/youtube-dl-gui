@@ -15,7 +15,8 @@ export default defineConfig((): UserConfig => ({
   define: {
     __DEV__: isDev,
     __E2E__: isE2E,
-    __APP_VERSION__: JSON.stringify(process.env.npm_package_version),
+    // build-windows sets APP_VERSION (e.g. 3.2.1-zh.11); package.json only has the base version.
+    __APP_VERSION__: JSON.stringify(process.env.APP_VERSION || process.env.npm_package_version),
   },
   clearScreen: false,
   build: {

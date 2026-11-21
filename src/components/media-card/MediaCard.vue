@@ -3,14 +3,16 @@
       class="card min-w-0 flex-row gap-4 border bg-base-100 p-3 transition-colors duration-150"
       :class="statusBorder"
   >
-    <figure class="relative aspect-video w-40 shrink-0 self-start overflow-hidden rounded-lg bg-base-300">
+    <figure class="relative flex aspect-video w-40 shrink-0 items-center justify-center self-start overflow-hidden rounded-lg bg-base-300">
       <img
-          :src="group.thumbnail ?? placeholderUrl"
+          v-if="showThumbnail"
+          :src="group.thumbnail"
           :alt="t('media.view.thumbnailAlt', { title: group.title ?? '' })"
           class="h-full w-full object-cover"
           loading="lazy"
-          @error="setPlaceholderImage"
+          @error="thumbnailFailed = true"
       />
+      <film-icon v-else class="size-8 text-base-content/25" aria-hidden="true" />
     </figure>
     <div class="flex min-w-0 flex-1 flex-col gap-2">
       <div class="flex min-w-0 items-start gap-2">
@@ -31,8 +33,8 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ComputedRef, PropType } from 'vue';
-import placeholderUrl from '../../assets/placeholder.png';
+import { computed, ComputedRef, PropType, ref, watch } from 'vue';
+import { FilmIcon } from '@heroicons/vue/24/outline';
 import { MediaState, useMediaStateStore } from '../../stores/media/state';
 import { useMediaStore } from '../../stores/media/media';
 import { useMediaOptionsStore } from '../../stores/media/options';
@@ -118,11 +120,13 @@ const removeGroup = (): void => {
   mediaStore.deleteGroup(group?.id);
 };
 
-const setPlaceholderImage = (event: Event): void => {
-  if (event.target instanceof HTMLImageElement) {
-    event.target.src = placeholderUrl;
-  }
-};
+// No thumbnail yet (still fetching), none at all, or it failed to load: show a
+// quiet icon instead of a placeholder picture.
+const thumbnailFailed = ref(false);
+watch(() => group.thumbnail, () => {
+  thumbnailFailed.value = false;
+});
+const showThumbnail = computed(() => Boolean(group.thumbnail) && !thumbnailFailed.value);
 
 const statusBorder = computed(() => {
   switch (groupState.value) {

@@ -121,6 +121,16 @@
         background-color: color-mix(in oklab, var(--ovd-field) 60%, var(--color-base-100));
     }
 
+    /*
+     * Focused fields: a green border with a faint glow, instead of daisyUI's
+     * base-content (white in the dark theme) outline drawn 2px away from the border.
+     */
+    :where(.input, .select, .textarea, .file-input):where(:focus, :focus-within) {
+        --input-color: var(--color-primary);
+        outline: 3px solid color-mix(in oklab, var(--color-primary) 22%, transparent);
+        outline-offset: 0;
+    }
+
     /* Checkboxes stay square-ish; --radius-selector rounds toggles and badges fully. */
     :where(.checkbox) {
         border-radius: 0.3125rem;

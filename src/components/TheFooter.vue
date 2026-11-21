@@ -1,7 +1,7 @@
 <template>
   <footer class="border-t border-line bg-base-100 px-6 py-3">
     <div class="flex flex-wrap items-center gap-x-5 gap-y-3">
-      <div class="flex min-w-52 flex-1 flex-col gap-1.5">
+      <div class="flex min-w-40 flex-1 flex-col gap-1.5">
         <p class="truncate text-sm" :class="isCompleted ? 'text-success' : ''" aria-live="polite">
           <template v-if="isDownloading">
             {{ t('layout.footer.progress.downloading', { done: progress.done, total: progress.total }) }}
