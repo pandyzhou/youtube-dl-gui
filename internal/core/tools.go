@@ -37,11 +37,14 @@ type ToolStatus struct {
 	Err      string
 }
 
-// Fraction is the downloaded share, or -1 when the size is unknown.
+// Fraction is the downloaded share: 0 while waiting, -1 while downloading
+// a file of unknown size.
 func (s ToolStatus) Fraction() float64 {
 	switch {
 	case s.Done && s.Err == "":
 		return 1
+	case s.Received == 0 && s.Total <= 0:
+		return 0
 	case s.Total <= 0:
 		return -1
 	}

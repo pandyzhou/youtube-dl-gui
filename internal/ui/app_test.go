@@ -29,7 +29,9 @@ var installing = core.ToolsState{
 }
 
 func TestInstallPage(t *testing.T) {
-	tools := &fakeTools{state: installing}
+	state := installing
+	state.Tools = append([]core.ToolStatus(nil), installing.Tools...) // the test changes them
+	tools := &fakeTools{state: state}
 	a := New(Deps{Tools: tools})
 	tt := ui.NewTester(a.View, 1000, 760)
 	for _, want := range []string{"正在准备下载工具", "完成", "31.0 MB / 84.0 MB", "等待中"} {
