@@ -15,7 +15,9 @@ import (
 // tests are gone with those features.
 
 func defaultOutput() config.OutputSettings {
-	return config.DefaultSettings("/downloads").Output
+	out := config.DefaultSettings("/downloads").Output
+	out.Video.Container = "mp4" // the expectations below were written for MP4
+	return out
 }
 
 func audio(abr int) FormatOptions { return FormatOptions{TrackType: TrackAudio, Abr: abr} }

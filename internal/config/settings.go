@@ -245,7 +245,7 @@ func DefaultSettings(downloadDir string) Settings {
 		},
 		Output: OutputSettings{
 			Video: VideoOutputSettings{
-				Container:             "mp4",
+				Container:             "mkv",
 				Policy:                PolicyAllowReencode,
 				PostprocessPreset:     "none",
 				CustomPostprocessMode: "remux",

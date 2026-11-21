@@ -146,6 +146,7 @@ type harness struct {
 func newHarness(t *testing.T, change func(*config.Settings)) *harness {
 	h := &harness{t: t, fake: &fakeYtdlp{infos: map[string]string{}, failInfo: map[string][]string{}, failDown: map[string][]string{}, block: map[string]bool{}}}
 	h.s = config.DefaultSettings(filepath.Join("C:", "Downloads"))
+	h.s.Output.Video.Container = "mp4"
 	h.s.Performance.MaxConcurrency = 2
 	h.s.Performance.SplitPlaylistThreshold = 3
 	if change != nil {
