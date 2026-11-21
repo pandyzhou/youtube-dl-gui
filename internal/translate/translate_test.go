@@ -369,7 +369,7 @@ func TestSegmentLongAndCJK(t *testing.T) {
 	if len(cues) != 3 || len(strings.Fields(cues[0].Text)) != maxWeight {
 		t.Errorf("long run: %d cues, first %q", len(cues), cues[0].Text)
 	}
-	cjk := []Word{{0, 500, "今天"}, {500, 1000, "我们"}, {1000, 1500, "来看"}}
+	cjk := []Word{{Start: 0, End: 500, Text: "今天"}, {Start: 500, End: 1000, Text: "我们"}, {Start: 1000, End: 1500, Text: "来看"}}
 	if c := Segment(cjk); len(c) != 1 || c[0].Text != "今天我们来看" {
 		t.Errorf("cjk %+v", c)
 	}
