@@ -57,6 +57,7 @@
     --noise: 0;
 
     --ovd-field: #ffffff;
+    --ovd-popup: #ffffff;
     --ovd-line: #e2e8f0;
 }
 
@@ -98,6 +99,7 @@
     --noise: 0;
 
     --ovd-field: #0f172a;
+    --ovd-popup: #263449;
     --ovd-line: #263247;
 }
 
@@ -125,10 +127,29 @@
      * Focused fields: a green border with a faint glow, instead of daisyUI's
      * base-content (white in the dark theme) outline drawn 2px away from the border.
      */
-    :where(.input, .select, .textarea, .file-input):where(:focus, :focus-within) {
+    :where(.input, .select, .textarea, .file-input):where(:focus, :focus-within, :open) {
         --input-color: var(--color-primary);
         outline: 3px solid color-mix(in oklab, var(--color-primary) 22%, transparent);
         outline-offset: 0;
+    }
+
+    /*
+     * Native <select> lists are drawn with the option colours. Without these the
+     * list uses the field colour, which in the dark theme is the page colour, so
+     * the open list blends into the page.
+     */
+    :where(select) :where(option, optgroup) {
+        background-color: var(--ovd-popup);
+        color: var(--color-base-content);
+    }
+
+    /* Disabled controls stay readable on the dark surfaces (daisyUI uses 20%). */
+    :where(.btn):where(:disabled, [disabled], [aria-disabled="true"], .btn-disabled) {
+        color: color-mix(in oklch, var(--color-base-content) 45%, #0000);
+    }
+
+    :where(.input, .select, .textarea, .file-input):where(:disabled, [disabled]) {
+        color: color-mix(in oklab, var(--color-base-content) 55%, transparent);
     }
 
     /* Checkboxes stay square-ish; --radius-selector rounds toggles and badges fully. */
