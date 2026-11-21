@@ -16,6 +16,7 @@
   },
   "updates": {
     "publicKey": "rlr6/91+8pba81kiwb9hLbetCPKKcjsQFTMSvIsoNj4=",
-    "github": "pandyzhou/youtube-dl-gui"
+    "github": "pandyzhou/youtube-dl-gui",
+    "deltas": 0
   }
 }
