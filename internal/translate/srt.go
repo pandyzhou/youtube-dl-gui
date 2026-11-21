@@ -14,7 +14,7 @@ type Cue struct {
 // ParseSRT reads SubRip content. Cue numbers are ignored; blocks without
 // a timing line or text are skipped.
 func ParseSRT(content string) []Cue {
-	content = strings.TrimPrefix(content, "﻿")
+	content = strings.TrimPrefix(content, "\ufeff")
 	content = strings.ReplaceAll(content, "\r\n", "\n")
 	var cues []Cue
 	var block []string
@@ -46,7 +46,7 @@ func ParseSRT(content string) []Cue {
 // non-empty translations[i] goes on the line above cue i's original text.
 func WriteBilingual(cues []Cue, translations []string) string {
 	var b strings.Builder
-	b.WriteString("﻿")
+	b.WriteString("\ufeff")
 	for i, cue := range cues {
 		b.WriteString(strconv.Itoa(i+1) + "\n" + cue.Timing + "\n")
 		if i < len(translations) {

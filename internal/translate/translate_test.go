@@ -22,7 +22,7 @@ import (
 // Ported from src-tauri/src/translation/{srt,mod}.rs.
 
 func TestParseSRT(t *testing.T) {
-	content := strings.Join([]string{"﻿1", "00:00:01,000 --> 00:00:02,000", "Hello", "there", "", "2", "00:00:03,000 --> 00:00:04,000", "[music]", ""}, "\r\n")
+	content := strings.Join([]string{"\ufeff1", "00:00:01,000 --> 00:00:02,000", "Hello", "there", "", "2", "00:00:03,000 --> 00:00:04,000", "[music]", ""}, "\r\n")
 	cues := ParseSRT(content)
 	if len(cues) != 2 || cues[0].Timing != "00:00:01,000 --> 00:00:02,000" || cues[0].Text != "Hello\nthere" || cues[1].Text != "[music]" {
 		t.Fatalf("cues %+v", cues)
@@ -34,7 +34,7 @@ func TestParseSRT(t *testing.T) {
 
 func TestWriteBilingual(t *testing.T) {
 	cues := []Cue{{"00:00:01,000 --> 00:00:02,000", "Hello"}, {"00:00:03,000 --> 00:00:04,000", "Bye"}}
-	want := strings.Join([]string{"﻿1", "00:00:01,000 --> 00:00:02,000", "你好", "Hello", "", "2", "00:00:03,000 --> 00:00:04,000", "Bye", "", ""}, "\n")
+	want := strings.Join([]string{"\ufeff1", "00:00:01,000 --> 00:00:02,000", "你好", "Hello", "", "2", "00:00:03,000 --> 00:00:04,000", "Bye", "", ""}, "\n")
 	if got := WriteBilingual(cues, []string{"你好", ""}); got != want {
 		t.Fatalf("got %q\nwant %q", got, want)
 	}
