@@ -177,7 +177,7 @@ func codecSelect(c *ui.Context, label string, value *string, codecs []ytdlp.Code
 	}
 	labels, ids := []string{label + "：自动"}, []string{""}
 	for _, codec := range codecs {
-		labels, ids = append(labels, codec.Label), append(ids, codec.ID)
+		labels, ids = append(labels, label+"："+codec.Label), append(ids, codec.ID)
 	}
 	return pick(c, label, value, labels, ids, 190)
 }
@@ -186,7 +186,7 @@ func codecSelect(c *ui.Context, label string, value *string, codecs []ytdlp.Code
 func trackSelect(c *ui.Context, label string, value *string, tracks []ytdlp.Track) bool {
 	labels, ids := []string{label + "：自动"}, []string{""}
 	for _, t := range tracks {
-		labels, ids = append(labels, t.Label), append(ids, t.ID)
+		labels, ids = append(labels, label+"："+t.Label), append(ids, t.ID)
 	}
 	return pick(c, label, value, labels, ids, 150)
 }
