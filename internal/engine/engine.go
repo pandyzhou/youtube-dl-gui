@@ -601,12 +601,27 @@ func (e *Engine) download(ctx context.Context, j *job, it *item) {
 	e.changed()
 	slog.Info("download", "job", j.id, "item", it.id, "summary", ytdlp.Summarize(args))
 	var early *earlyWork
-	if e.d.BeforeDownload != nil && e.d.AfterDownload != nil {
+	if e.d.BeforeDownload != nil && (e.d.AfterDownload != nil || e.d.MergeTracks != nil) {
 		early = e.startEarly(ctx, j, it, track)
 	}
+	if e.oneStep(j, it, track, settings) && e.downloadOneStep(ctx, j, it, args, track, settings, early) {
+		return
+	}
 
+	code, err := e.runYtdlp(ctx, j, it, args, track)
+	if err == nil && code == 0 && e.d.AfterDownload != nil && ctx.Err() == nil {
+		e.afterDownload(ctx, j, it, track, early)
+	} else if early != nil {
+		early.cancel()
+	}
+	e.finishDownload(ctx, j, it, code, err)
+}
+
+// runYtdlp runs a download, showing its progress, stage, destination and
+// problems on the item.
+func (e *Engine) runYtdlp(ctx context.Context, j *job, it *item, args []string, track ytdlp.TrackType) (int, error) {
 	parser := ytdlp.NewProgressParser(track)
-	code, err := e.d.Runner.Run(ctx, args, func(l proc.Line) {
+	return e.d.Runner.Run(ctx, args, func(l proc.Line) {
 		e.appendLog(j, l.Text)
 		ev := parser.ParseLine(l.Text)
 		d := ytdlp.ParseDiagnostic(l.Text)
@@ -637,12 +652,6 @@ func (e *Engine) download(ctx context.Context, j *job, it *item) {
 		e.mu.Unlock()
 		e.changed()
 	})
-	if err == nil && code == 0 && e.d.AfterDownload != nil && ctx.Err() == nil {
-		e.afterDownload(ctx, j, it, track, early)
-	} else if early != nil {
-		early.cancel()
-	}
-	e.finishDownload(ctx, j, it, code, err)
 }
 
 // subtitlesOnly makes the subtitles of a file downloaded before.
@@ -731,23 +740,41 @@ func (e *Engine) reporter(j *job, it *item) Reporter {
 
 func (e *Engine) afterDownload(ctx context.Context, j *job, it *item, track ytdlp.TrackType, early *earlyWork) {
 	r := e.reporter(j, it)
-	if early != nil {
-		// Show the early work's progress until it is done.
-		early.mu.Lock()
-		early.shown = true
-		percent := early.percent
-		early.mu.Unlock()
-		r.Stage(ytdlp.StageTranslating)
-		r.Progress(percent)
-		select {
-		case <-early.done:
-		case <-ctx.Done():
-			early.cancel()
-			<-early.done
-			return
-		}
+	result, ok := e.waitEarly(ctx, it, early, r)
+	if !ok {
+		return
 	}
+	fin := e.finished(j, it, track)
+	fin.Early = result
+	e.d.AfterDownload(ctx, fin, r)
+}
+
+// waitEarly shows the early work's progress until it is done and returns
+// its result; not ok when ctx ended first.
+func (e *Engine) waitEarly(ctx context.Context, it *item, early *earlyWork, r Reporter) (any, bool) {
+	if early == nil {
+		return nil, true
+	}
+	early.mu.Lock()
+	early.shown = true
+	percent := early.percent
+	early.mu.Unlock()
+	r.Stage(ytdlp.StageTranslating)
+	r.Progress(percent)
+	select {
+	case <-early.done:
+		return early.result, true
+	case <-ctx.Done():
+		early.cancel()
+		<-early.done
+		return nil, false
+	}
+}
+
+// finished describes a downloaded item for AfterDownload.
+func (e *Engine) finished(j *job, it *item, track ytdlp.TrackType) Finished {
 	e.mu.Lock()
+	defer e.mu.Unlock()
 	fin := Finished{
 		JobID: j.id, ItemID: it.id, URL: it.url, Destination: it.destination.Path, TrackType: track, Video: it.video,
 		SubtitlesOnly: j.existing != "",
@@ -755,11 +782,7 @@ func (e *Engine) afterDownload(ctx context.Context, j *job, it *item, track ytdl
 	if it.video != nil {
 		fin.Title = it.video.Title
 	}
-	e.mu.Unlock()
-	if early != nil {
-		fin.Early = early.result
-	}
-	e.d.AfterDownload(ctx, fin, r)
+	return fin
 }
 
 func (e *Engine) finishDownload(ctx context.Context, j *job, it *item, code int, err error) {

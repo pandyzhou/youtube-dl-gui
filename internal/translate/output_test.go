@@ -1,8 +1,13 @@
 package translate
 
 import (
+	"context"
+	"os"
 	"strings"
 	"testing"
+
+	"github.com/pandyzhou/youtube-dl-gui/internal/engine"
+	"github.com/pandyzhou/youtube-dl-gui/internal/ytdlp"
 )
 
 func TestWriteASS(t *testing.T) {
@@ -67,5 +72,28 @@ func TestEmbedArgs(t *testing.T) {
 	if !strings.Contains(mp4, "-i v.mp4 -i s.srt -map 0 -map 1 -c copy -c:s:0 mov_text") ||
 		!strings.Contains(mp4, "title=中英双语（纯文本） -disposition:s:0 default") || strings.Contains(mp4, "s.ass") {
 		t.Errorf("mp4 args %s", mp4)
+	}
+}
+
+func TestTracksForOneStep(t *testing.T) {
+	cues := []Cue{{Timing: "00:00:01,000 --> 00:00:02,000", Text: "Hello"}}
+	e := Env{}
+	e.Settings.Translation.Enabled = true
+	d := engine.Finished{Early: &early{p: &prepared{cues: cues, translations: []string{"你好"}}}, TrackType: ytdlp.TrackBoth}
+	dir := t.TempDir()
+	tracks := Tracks(context.Background(), e, d, dir, engine.Reporter{
+		Stage: func(ytdlp.Stage) {}, Progress: func(float64) {}, Log: func(string) {},
+		Warn: func(code, msg string) { t.Errorf("warning %s: %s", code, msg) },
+	})
+	if len(tracks) != 2 || !tracks[0].Default || tracks[0].Title != trackStyled || tracks[1].Title != trackPlain {
+		t.Fatalf("tracks %+v", tracks)
+	}
+	ass, err := os.ReadFile(tracks[0].Path)
+	if err != nil || !strings.Contains(string(ass), `你好\N{\rEN}Hello`) {
+		t.Errorf("ass %q, %v", ass, err)
+	}
+	e.Settings.Translation.Enabled = false
+	if Tracks(context.Background(), e, d, dir, engine.Reporter{}) != nil {
+		t.Error("tracks with translation off")
 	}
 }

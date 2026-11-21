@@ -91,9 +91,16 @@ type Deps struct {
 	// download is done; AfterDownload waits for it and gets its result as
 	// Finished.Early. It is canceled when the download fails or stops.
 	BeforeDownload func(ctx context.Context, s Started, r Reporter) any
-	OnChange       func() // state changed; called at most every Throttle
-	OnEvent        func(Event)
-	Throttle       time.Duration
+	// FFmpeg, MergeTracks and OneStep turn on one-step downloads (see
+	// onestep.go) when OneStep says so: MergeTracks gets BeforeDownload's
+	// result in Finished.Early, with Destination the downloaded video
+	// stream, and writes the subtitle tracks to merge into dir.
+	FFmpeg      Runner
+	MergeTracks func(ctx context.Context, d Finished, dir string, r Reporter) []Track
+	OneStep     func() bool
+	OnChange    func() // state changed; called at most every Throttle
+	OnEvent     func(Event)
+	Throttle    time.Duration
 }
 
 // Finished describes a completed download for AfterDownload.

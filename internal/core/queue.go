@@ -63,6 +63,15 @@ func NewEngine(c *Core, tools *Tools, changed func(), events func(engine.Event))
 			}
 			translate.AfterDownload(ctx, translateEnv(c, tools), d, r)
 		},
+		FFmpeg: engine.YtdlpRunner{Path: tools.Manager().Path("ffmpeg"), BinDir: c.Dirs.Bin},
+		MergeTracks: func(ctx context.Context, d engine.Finished, dir string, r engine.Reporter) []engine.Track {
+			return translate.Tracks(ctx, translateEnv(c, tools), d, dir, r)
+		},
+		// One step when the translated subtitles go into the video.
+		OneStep: func() bool {
+			t := c.Settings().Translation
+			return t.Enabled && t.Output != translate.OutputFiles
+		},
 		OnChange: changed,
 		OnEvent:  events,
 		Throttle: 100 * time.Millisecond,

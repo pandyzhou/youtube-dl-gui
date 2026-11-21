@@ -130,6 +130,11 @@ func AfterDownload(ctx context.Context, env Env, d engine.Finished, r engine.Rep
 	if err == nil {
 		path, untranslated, err = finish(ctx, env, d.Destination, p, r)
 	}
+	report(ctx, path, untranslated, err, r)
+}
+
+// report logs where the subtitles went, or warns about what went wrong.
+func report(ctx context.Context, path string, untranslated int, err error, r engine.Reporter) {
 	var f *failure
 	switch {
 	case ctx.Err() != nil:
@@ -144,6 +149,53 @@ func AfterDownload(ctx context.Context, env Env, d engine.Finished, r engine.Rep
 		if untranslated > 0 {
 			r.Warn(CodePartial, fmt.Sprintf("%d 行字幕没有翻译成功。", untranslated))
 		}
+	}
+}
+
+// Tracks writes the bilingual subtitles of a one-step download into dir
+// for the engine to merge with the video: the styled ASS track, shown by
+// default, and the plain SRT one. d.Destination is the downloaded video
+// stream, read for its size. Problems are warnings, and give no tracks.
+func Tracks(ctx context.Context, env Env, d engine.Finished, dir string, r engine.Reporter) []engine.Track {
+	if !env.Settings.Translation.Enabled || d.TrackType == ytdlp.TrackAudio {
+		return nil
+	}
+	r.Stage(ytdlp.StageTranslating)
+	var p *prepared
+	var err error
+	if e, ok := d.Early.(*early); ok {
+		p, err = e.p, e.err
+	} else {
+		r.Log("[translate] Creating bilingual subtitles")
+		p, err = prepare(ctx, env, d.URL, d.Title, d.Video, r)
+	}
+	if err != nil {
+		report(ctx, "", 0, err, r)
+		return nil
+	}
+	probe := probeVideo(ctx, env.FFprobe, d.Destination)
+	ass, srt := filepath.Join(dir, "translated.ass"), filepath.Join(dir, "translated.srt")
+	if err := os.WriteFile(ass, []byte(WriteASS(p.cues, p.translations, probe.Width, probe.Height)), 0o644); err != nil {
+		report(ctx, "", 0, err, r)
+		return nil
+	}
+	if err := os.WriteFile(srt, []byte(WriteBilingual(p.cues, p.translations)), 0o644); err != nil {
+		report(ctx, "", 0, err, r)
+		return nil
+	}
+	untranslated := 0
+	for _, t := range p.translations {
+		if t == "" {
+			untranslated++
+		}
+	}
+	if untranslated == 0 {
+		p.cp.remove()
+	}
+	report(ctx, "the video, with the video and audio in one pass", untranslated, nil, r)
+	return []engine.Track{
+		{Path: ass, Title: trackStyled, Language: "chi", Default: true},
+		{Path: srt, Title: trackPlain, Language: "chi"},
 	}
 }
 
