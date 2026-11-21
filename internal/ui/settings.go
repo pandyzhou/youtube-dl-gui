@@ -42,7 +42,7 @@ type settingRow struct {
 }
 
 func (a *App) loadSettings() {
-	a.s.draft = a.settings()
+	a.s.draft = cloneSettings(a.settings()) // empty lists become nil on both sides
 	a.s.saved = cloneSettings(a.s.draft)
 	if a.deps.Preferences != nil {
 		a.s.prefs = a.deps.Preferences()
