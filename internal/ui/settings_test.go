@@ -150,6 +150,7 @@ func TestSettingsScreenshots(t *testing.T) {
 
 func TestNotificationKinds(t *testing.T) {
 	f := newFakeSettings()
+	f.s.Notifications.NotificationBehavior = config.NotifyAlways // "never" disables the switches
 	a := New(f.deps())
 	a.router.Replace("/settings")
 	a.s.section = 5
