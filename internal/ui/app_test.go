@@ -17,7 +17,7 @@ type fakeTools struct {
 }
 
 func (f *fakeTools) State() core.ToolsState { return f.state }
-func (f *fakeTools) Start() { f.started++ }
+func (f *fakeTools) Start()                 { f.started++ }
 
 var installing = core.ToolsState{
 	Phase: core.ToolsInstalling, MissingRequired: []string{"yt-dlp", "ffmpeg"},
