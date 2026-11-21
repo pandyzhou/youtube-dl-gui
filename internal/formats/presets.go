@@ -115,6 +115,45 @@ func Resolve(p Preset, formats []ytdlp.Format) Choice {
 	return c
 }
 
+// ResolveCustom describes an explicit format: the format it names (for the
+// card's label) and an estimated size. A video format with no height is
+// the best available.
+func ResolveCustom(f ytdlp.FormatOptions, formats []ytdlp.Format) Choice {
+	c := Choice{Format: f}
+	audio := bestAudio(formats)
+	switch {
+	case f.TrackType == ytdlp.TrackAudio:
+		for i := range formats {
+			if formats[i].Height == 0 && formats[i].Abr == f.Abr && f.Abr > 0 {
+				c.Matched = &formats[i]
+			}
+		}
+		if c.Matched == nil {
+			c.Matched = audio
+		}
+		if c.Matched != nil {
+			c.Size = c.Matched.Filesize
+		}
+		return c
+	case f.Height > 0:
+		for i := range formats {
+			if formats[i].Height == f.Height && (f.Fps == 0 || formats[i].Fps == f.Fps) {
+				c.Matched = &formats[i]
+				break
+			}
+		}
+	default:
+		c.Matched = matchVideo(formats, 0)
+	}
+	if c.Matched != nil && c.Matched.Filesize > 0 {
+		c.Size = c.Matched.Filesize
+		if audio != nil && f.TrackType == ytdlp.TrackBoth {
+			c.Size += audio.Filesize
+		}
+	}
+	return c
+}
+
 func matchVideo(formats []ytdlp.Format, maxHeight int) *ytdlp.Format {
 	var best, lowest *ytdlp.Format
 	for i := range formats {
@@ -154,10 +193,14 @@ func (c Choice) Label() string {
 	switch {
 	case c.Format.TrackType == ytdlp.TrackAudio && c.AudioFormat != "":
 		return "音频 " + upper(c.AudioFormat)
+	case c.Format.TrackType == ytdlp.TrackAudio && c.Matched != nil && c.Format.Abr > 0:
+		return "音频 " + ResolutionLabel(*c.Matched)
 	case c.Format.TrackType == ytdlp.TrackAudio:
 		return "最佳音频"
 	case c.Matched == nil:
 		return "最佳画质"
+	case c.Format.TrackType == ytdlp.TrackVideo:
+		return ResolutionLabel(*c.Matched) + " 无声"
 	}
 	return ResolutionLabel(*c.Matched)
 }

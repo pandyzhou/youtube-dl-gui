@@ -2,6 +2,7 @@ package ui
 
 import (
 	"reflect"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -393,6 +394,7 @@ func (a *App) settingRows(c *ui.Context, p palette) []settingRow {
 		{system, "启动时最小化", "开机启动时不显示窗口。", "自启 托盘", toggle(c, "启动时最小化", &s.System.AutoStartMinimised), false},
 		{system, "全局快捷键", "Alt+Shift+V 加入复制的链接，Alt+Shift+D 加入并下载。", "快捷键 热键", toggle(c, "全局快捷键", &s.Input.GlobalShortcuts), false},
 		{system, "通知", "", "提醒", segmented(c, &s.Notifications.NotificationBehavior, []string{config.NotifyAlways, config.NotifyOnBackground, config.NotifyNever}, []string{"总是", "窗口在后台时", "从不"}), false},
+		{system, "通知哪些事", "取消勾选的事不再通知。", "提醒 通知 完成 失败", a.noticeKinds(c, &s.Notifications), true},
 		{system, "自动更新下载工具", "启动时更新 yt-dlp 等工具。", "更新 yt-dlp", toggle(c, "自动更新下载工具", &s.Update.UpdateBinaries), false},
 		{system, "自动检查应用更新", "", "更新 升级", toggle(c, "自动检查应用更新", &s.Update.UpdateApp), false},
 	}...)
@@ -450,6 +452,36 @@ func (a *App) dateField(c *ui.Context, f *config.DateFilter) func() {
 				c.Key("date-" + preset.id)
 				if ui.Button(c, preset.label).Height(32).Clicked() {
 					*f = formats.DatePreset(preset.id, time.Now())
+				}
+			}
+		})
+	}
+}
+
+// noticeKindList are the notifications the app sends, with their names.
+var noticeKindList = []struct{ kind, label string }{
+	{config.NoticeVideoReady, "视频信息就绪"},
+	{config.NoticePlaylistReady, "播放列表就绪"},
+	{config.NoticeVideoFinished, "视频下载完成"},
+	{config.NoticePlaylistFinished, "播放列表下载完成"},
+	{config.NoticeDownloadFailed, "下载失败"},
+	{config.NoticeQueueFinished, "队列全部完成"},
+}
+
+// noticeKinds turns each kind of notification on or off; off kinds are
+// kept in DisabledNotifications.
+func (a *App) noticeKinds(c *ui.Context, n *config.NotificationSettings) func() {
+	return func() {
+		off := n.NotificationBehavior == config.NotifyNever
+		ui.Row(c).Gap(16).Wrap().Children(func() {
+			for _, k := range noticeKindList {
+				c.Key("notice-" + k.kind)
+				on := !slices.Contains(n.DisabledNotifications, k.kind)
+				if ui.Checkbox(c, &on, k.label).Disabled(off).Changed() {
+					n.DisabledNotifications = slices.DeleteFunc(n.DisabledNotifications, func(s string) bool { return s == k.kind })
+					if !on {
+						n.DisabledNotifications = append(n.DisabledNotifications, k.kind)
+					}
 				}
 			}
 		})

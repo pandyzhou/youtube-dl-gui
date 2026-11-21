@@ -185,3 +185,21 @@ func TestParseSelection(t *testing.T) {
 		t.Errorf("blank %+v %v", rows, err)
 	}
 }
+
+func TestResolveCustom(t *testing.T) {
+	c := ResolveCustom(ytdlp.FormatOptions{TrackType: ytdlp.TrackBoth, Height: 1080, Fps: 60}, sample())
+	if c.Label() != "1080p60" || c.Size != (300+12)<<20 {
+		t.Errorf("video %q %d", c.Label(), c.Size)
+	}
+	c = ResolveCustom(ytdlp.FormatOptions{TrackType: ytdlp.TrackVideo, Height: 720}, sample())
+	if c.Label() != "720p 无声" || c.Size != 100<<20 {
+		t.Errorf("video only %q %d", c.Label(), c.Size)
+	}
+	c = ResolveCustom(ytdlp.FormatOptions{TrackType: ytdlp.TrackAudio, Abr: 129}, sample())
+	if c.Label() != "音频 129kbps" || c.Size != 10<<20 {
+		t.Errorf("audio %q %d", c.Label(), c.Size)
+	}
+	if c := ResolveCustom(ytdlp.FormatOptions{TrackType: ytdlp.TrackBoth}, sample()); c.Label() != "2160p60" {
+		t.Errorf("best %q", c.Label())
+	}
+}

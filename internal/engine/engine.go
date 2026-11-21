@@ -524,12 +524,12 @@ func (e *Engine) templateValues(j *job, it *item, settings config.Settings) ytdl
 
 // choice resolves a job's quality for one video.
 func choice(j *job, video *ytdlp.Video) formats.Choice {
-	if j.custom != nil {
-		return formats.Choice{Format: *j.custom}
-	}
 	var fs []ytdlp.Format
 	if video != nil {
 		fs = video.Formats
+	}
+	if j.custom != nil {
+		return formats.ResolveCustom(*j.custom, fs)
 	}
 	return formats.Resolve(formats.PresetByID(j.preset), fs)
 }

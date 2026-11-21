@@ -147,3 +147,21 @@ func TestSettingsScreenshots(t *testing.T) {
 		}
 	}
 }
+
+func TestNotificationKinds(t *testing.T) {
+	f := newFakeSettings()
+	a := New(f.deps())
+	a.router.Replace("/settings")
+	a.s.section = 5
+	tt := ui.NewTester(a.View, 1000, 1400)
+	clickRole(t, tt, ui.RoleCheckBox, "下载失败")
+	tt.Frame()
+	if len(f.s.Notifications.DisabledNotifications) != 1 || f.s.Notifications.DisabledNotifications[0] != config.NoticeDownloadFailed {
+		t.Fatalf("disabled %q", f.s.Notifications.DisabledNotifications)
+	}
+	clickRole(t, tt, ui.RoleCheckBox, "下载失败")
+	tt.Frame()
+	if len(f.s.Notifications.DisabledNotifications) != 0 {
+		t.Fatalf("re-enabled %q", f.s.Notifications.DisabledNotifications)
+	}
+}

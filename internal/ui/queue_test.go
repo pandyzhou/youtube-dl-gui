@@ -1,6 +1,7 @@
 package ui
 
 import (
+	"fmt"
 	"image/png"
 	"os"
 	"path/filepath"
@@ -63,6 +64,15 @@ func (f *fakeQueue) Remove(id string) {
 
 func (f *fakeQueue) SetPreset(id, preset string) {
 	f.record("preset " + id + " " + preset)
+}
+
+func (f *fakeQueue) SetCustom(id string, format ytdlp.FormatOptions) {
+	f.record(fmt.Sprintf("custom %s %s %d %d", id, format.TrackType, format.Height, format.Abr))
+	for i := range f.jobs {
+		if f.jobs[i].ID == id {
+			f.jobs[i].Custom, f.jobs[i].Preset = &format, formats.PresetCustom
+		}
+	}
 }
 
 func (f *fakeQueue) Log(id string) []string {
@@ -264,4 +274,50 @@ func showDetails(a *App) {
 func showSelection(a *App) {
 	a.openSelection("select")
 	a.q.selectAll = 1
+}
+
+func customJob() engine.JobView {
+	v := &ytdlp.Video{
+		Title: "可选格式的视频",
+		Formats: []ytdlp.Format{
+			{ID: "137", Height: 1080, Fps: 30, Filesize: 100 << 20},
+			{ID: "136", Height: 720, Fps: 30, Filesize: 50 << 20},
+			{ID: "140", Abr: 129, Filesize: 5 << 20},
+		},
+		VideoCodecs: []ytdlp.Codec{{ID: "avc1.640028", Label: "H.264 High, Level 4.0"}, {ID: "vp9", Label: "VP9"}},
+		AudioCodecs: []ytdlp.Codec{{ID: "mp4a.40.2", Label: "AAC LC"}},
+		AudioTracks: []ytdlp.Track{{ID: "lang:en|channels:2", Label: "en - 2ch"}, {ID: "lang:ja|channels:2", Label: "ja - 2ch"}},
+	}
+	return engine.JobView{ID: "c", Title: v.Title, Status: engine.StatusReady, Preset: "720p",
+		Items: []engine.ItemView{{ID: "i", Status: engine.StatusReady, Video: v, PlaylistIndex: -1}}}
+}
+
+func TestCustomFormatPanel(t *testing.T) {
+	q := &fakeQueue{jobs: []engine.JobView{customJob()}}
+	a := New(Deps{Queue: q})
+	tt := ui.NewTester(a.View, 1000, 760)
+	if tt.HasText("仅视频（无声）") {
+		t.Fatal("panel shown for a preset")
+	}
+	// Choosing 自定义… starts from what the preset resolved to.
+	if got := customStart(q.jobs[0]); got.TrackType != ytdlp.TrackBoth || got.Height != 720 {
+		t.Fatalf("start %+v", got)
+	}
+	q.SetCustom("c", customStart(q.jobs[0]))
+	tt.Frame()
+	for _, want := range []string{"视频", "仅视频（无声）", "仅音频", "720p", "视频编码：自动", "音频编码：自动", "音轨：自动"} {
+		if !tt.HasText(want) {
+			t.Errorf("%q missing, texts %q", want, tt.Texts())
+		}
+	}
+	if err := tt.Click("仅音频"); err != nil {
+		t.Fatal(err)
+	}
+	tt.Frame()
+	if last := q.calls[len(q.calls)-1]; last != "custom c audio 0 0" {
+		t.Fatalf("calls %q", q.calls)
+	}
+	if !tt.HasText("最佳音质") || tt.HasText("视频编码：自动") {
+		t.Errorf("audio controls wrong, texts %q", tt.Texts())
+	}
 }

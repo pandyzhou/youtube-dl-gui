@@ -11,6 +11,7 @@ import (
 
 	"github.com/pandyzhou/youtube-dl-gui/internal/engine"
 	"github.com/pandyzhou/youtube-dl-gui/internal/formats"
+	"github.com/pandyzhou/youtube-dl-gui/internal/ytdlp"
 )
 
 // QueueSource is the engine as the queue page drives it.
@@ -25,6 +26,7 @@ type QueueSource interface {
 	Remove(id string)
 	RemoveWhere(match func(engine.JobView) bool) int
 	SetPreset(id, preset string)
+	SetCustom(id string, f ytdlp.FormatOptions)
 	SelectPlaylist(id string, rows []formats.SelectionRow, start bool) error
 	Log(id string) []string
 }
@@ -226,8 +228,17 @@ func (a *App) jobList(c *ui.Context, p palette) {
 }
 
 func (a *App) jobCard(c *ui.Context, p palette, j engine.JobView) {
-	card := ui.Row(c).Gap(cardPad).AlignItems(ui.Center).Padding(cardPad).Radius(10).Background(p.surface)
+	card := ui.Column(c).AlignItems(ui.Stretch).Padding(cardPad).Radius(10).Background(p.surface)
 	card.Border(1, p.border).Children(func() {
+		a.cardRow(c, p, j)
+		if j.Custom != nil && j.Status == engine.StatusReady {
+			a.customPanel(c, p, j)
+		}
+	})
+}
+
+func (a *App) cardRow(c *ui.Context, p palette, j engine.JobView) {
+	ui.Row(c).Gap(cardPad).AlignItems(ui.Center).Children(func() {
 		thumbnail(c, p, j.Thumbnail)
 		ui.Column(c).Grow(1).Shrink(1).MinWidth(0).Gap(4).AlignItems(ui.Stretch).Children(func() {
 			title := ui.ButtonBase(c).Justify(ui.Start).Label("详情：" + j.Title).Children(func() {
@@ -408,7 +419,11 @@ func (a *App) jobActions(c *ui.Context, p palette, j engine.JobView) {
 				preset = formats.PresetByID(formats.PresetCustom).Label
 			}
 			if ui.Select(c, &preset, formats.PresetLabels()).Width(130).Height(32).Label("画质").Changed() {
-				a.queue.SetPreset(j.ID, formats.PresetByLabel(preset).ID)
+				if chosen := formats.PresetByLabel(preset); chosen.Custom {
+					a.queue.SetCustom(j.ID, customStart(j))
+				} else {
+					a.queue.SetPreset(j.ID, chosen.ID)
+				}
 			}
 			if ui.PrimaryButton(c, "").Size(32, 32).Padding(0).Label("开始下载").Tooltip("开始下载").Children(func() {
 				ui.Icon(c, iconPlay).FontSize(16)
