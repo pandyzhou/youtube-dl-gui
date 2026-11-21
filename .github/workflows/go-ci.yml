@@ -7,7 +7,7 @@ name: Go CI
 on:
   workflow_dispatch:
   push:
-    branches: [main, mygo]
+    branches: ['**']
   pull_request:
     branches: [main]
     paths:

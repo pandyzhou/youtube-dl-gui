@@ -8,7 +8,7 @@ name: MyGo build (Windows)
 on:
   workflow_dispatch:
   push:
-    branches: [main, mygo]
+    branches: ['**']
     paths:
       - '**.go'
       - 'go.mod'
