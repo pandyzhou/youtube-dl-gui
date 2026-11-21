@@ -1,3 +1,5 @@
+> **本仓库已停止更新。** 应用已改名为 **流光下载 LumaDL**，并迁移到独立仓库 https://github.com/pandyzhou/lumadl ，请到那里下载新版本。
+
 # Open Video Downloader（简体中文 · Windows）
 
 基于 [yt-dlp](https://github.com/yt-dlp/yt-dlp) 的视频下载器，用 [MyGo](https://github.com/egoist/mygo) 原生界面重写，只支持 Windows x64，界面为简体中文。
