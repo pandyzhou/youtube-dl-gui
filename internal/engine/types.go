@@ -82,8 +82,9 @@ type Deps struct {
 	// updated; nil never waits.
 	WaitTools func(ctx context.Context) error
 	// AfterDownload runs after a successful download, as AI subtitle
-	// translation does; stage reports its progress. Nil does nothing.
-	AfterDownload func(ctx context.Context, d Finished, stage func(ytdlp.Stage)) error
+	// translation does. Its problems are warnings on the item; they never
+	// fail the download. Nil does nothing.
+	AfterDownload func(ctx context.Context, d Finished, r Reporter)
 	OnChange      func() // state changed; called at most every Throttle
 	OnEvent       func(Event)
 	Throttle      time.Duration
@@ -93,9 +94,19 @@ type Deps struct {
 type Finished struct {
 	JobID       string
 	ItemID      string
+	URL         string
 	Title       string
 	Destination string
+	TrackType   ytdlp.TrackType
 	Video       *ytdlp.Video
+}
+
+// Reporter lets AfterDownload show what it does on the item.
+type Reporter struct {
+	Stage    func(ytdlp.Stage)
+	Progress func(percent float64)
+	Log      func(line string)
+	Warn     func(code, message string)
 }
 
 // AddOptions are how a link is added.

@@ -6,7 +6,9 @@ import (
 	"time"
 
 	"github.com/pandyzhou/youtube-dl-gui/internal/engine"
+	"github.com/pandyzhou/youtube-dl-gui/internal/httpx"
 	"github.com/pandyzhou/youtube-dl-gui/internal/secrets"
+	"github.com/pandyzhou/youtube-dl-gui/internal/translate"
 	"github.com/pandyzhou/youtube-dl-gui/internal/ytdlp"
 )
 
@@ -47,6 +49,23 @@ func NewEngine(c *Core, tools *Tools, changed func(), events func(engine.Event))
 				}
 			}
 			return nil
+		},
+		AfterDownload: func(ctx context.Context, d engine.Finished, r engine.Reporter) {
+			settings := c.Settings()
+			if !settings.Translation.Enabled {
+				return
+			}
+			key, err := c.Secrets.Get(secrets.TranslationAPIKey)
+			if err != nil {
+				slog.Warn("read translation key", "err", err)
+			}
+			translate.AfterDownload(ctx, translate.Env{
+				Runner:   engine.YtdlpRunner{Path: tools.Manager().Path("yt-dlp"), BinDir: c.Dirs.Bin},
+				Settings: settings,
+				Secrets:  c.AuthSecrets(),
+				APIKey:   key,
+				Client:   httpx.Client(settings.Network, 5*time.Minute),
+			}, d, r)
 		},
 		OnChange: changed,
 		OnEvent:  events,

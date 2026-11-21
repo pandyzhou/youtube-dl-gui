@@ -627,23 +627,35 @@ func (e *Engine) download(ctx context.Context, j *job, it *item) {
 		e.changed()
 	})
 	if err == nil && code == 0 && e.d.AfterDownload != nil && ctx.Err() == nil {
-		e.mu.Lock()
-		fin := Finished{JobID: j.id, ItemID: it.id, Destination: it.destination.Path, Video: it.video}
-		if it.video != nil {
-			fin.Title = it.video.Title
-		}
-		e.mu.Unlock()
-		err = e.d.AfterDownload(ctx, fin, func(s ytdlp.Stage) {
-			e.mu.Lock()
-			it.stage = s
-			e.mu.Unlock()
-			e.changed()
-		})
-		if err != nil {
-			err = fmt.Errorf("下载完成，但后续处理失败：%w", err)
-		}
+		e.afterDownload(ctx, j, it, track)
 	}
 	e.finishDownload(ctx, j, it, code, err)
+}
+
+// afterDownload runs the AfterDownload step, showing its stage, progress,
+// log and warnings on the item.
+func (e *Engine) afterDownload(ctx context.Context, j *job, it *item, track ytdlp.TrackType) {
+	e.mu.Lock()
+	fin := Finished{JobID: j.id, ItemID: it.id, URL: it.url, Destination: it.destination.Path, TrackType: track, Video: it.video}
+	if it.video != nil {
+		fin.Title = it.video.Title
+	}
+	e.mu.Unlock()
+	update := func(fn func()) {
+		e.mu.Lock()
+		fn()
+		e.mu.Unlock()
+		e.changed()
+	}
+	e.d.AfterDownload(ctx, fin, Reporter{
+		Stage:    func(s ytdlp.Stage) { update(func() { it.stage, it.percent = s, 0 }) },
+		Progress: func(p float64) { update(func() { it.percent = p }) },
+		Log:      func(line string) { e.appendLog(j, line) },
+		Warn: func(code, message string) {
+			d := ytdlp.Diagnostic{Level: ytdlp.LevelWarning, Code: code, Message: message, Raw: message}
+			update(func() { it.diagnostics = appendDiagnostics(it.diagnostics, d) })
+		},
+	})
 }
 
 func (e *Engine) finishDownload(ctx context.Context, j *job, it *item, code int, err error) {
