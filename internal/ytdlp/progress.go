@@ -32,6 +32,7 @@ const (
 	StageReencoding   Stage = "reencoding"
 	StageFinalizing   Stage = "finalizing"
 	StageTranslating  Stage = "translating" // the app's AI subtitle step
+	StageEmbedding    Stage = "embedding"   // the app putting them into the video
 )
 
 // Progress is one progress update. Nil fields are unknown.

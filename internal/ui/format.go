@@ -46,6 +46,7 @@ var stageLabels = map[ytdlp.Stage]string{
 	ytdlp.StageReencoding:   "重新编码",
 	ytdlp.StageFinalizing:   "收尾处理",
 	ytdlp.StageTranslating:  "翻译字幕",
+	ytdlp.StageEmbedding:    "写入字幕",
 }
 
 var statusLabels = map[engine.Status]string{

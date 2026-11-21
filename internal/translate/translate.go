@@ -96,6 +96,9 @@ type Env struct {
 	// CacheDir keeps checkpoints of unfinished translations; "" keeps
 	// none.
 	CacheDir string
+	// FFmpeg and FFprobe put the subtitles into the video; without them
+	// they go to files.
+	FFmpeg, FFprobe string
 }
 
 type failure struct {
@@ -203,9 +206,9 @@ func run(ctx context.Context, env Env, d engine.Finished, r engine.Reporter) (st
 	if err != nil {
 		return "", 0, err
 	}
-	output := strings.TrimSuffix(d.Destination, filepath.Ext(d.Destination)) + ".srt"
-	if err := os.WriteFile(output, []byte(WriteBilingual(cues, translations)), 0o644); err != nil {
-		return "", 0, &failure{CodeFailed, "无法保存字幕：" + err.Error()}
+	output, err := deliver(ctx, env, d.Destination, cues, translations, r)
+	if err != nil {
+		return "", 0, err
 	}
 	untranslated := 0
 	for _, t := range translations {

@@ -88,6 +88,9 @@ func Normalize(s Settings, downloadDir string) Settings {
 	if s.Translation.Concurrency <= 0 {
 		s.Translation.Concurrency = d.Translation.Concurrency
 	}
+	if s.Translation.Output != "files" {
+		s.Translation.Output = d.Translation.Output
+	}
 	if s.Output.AudioFileNameTemplate == "" {
 		s.Output.AudioFileNameTemplate = DefaultAudioFileNameTemplate
 	}

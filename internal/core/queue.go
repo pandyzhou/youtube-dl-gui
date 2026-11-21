@@ -67,6 +67,8 @@ func NewEngine(c *Core, tools *Tools, changed func(), events func(engine.Event))
 				APIKey:   key,
 				Client:   httpx.Client(settings.Network, 5*time.Minute),
 				CacheDir: filepath.Join(c.Dirs.Data, "translate-cache"),
+				FFmpeg:   tools.Manager().Path("ffmpeg"),
+				FFprobe:  tools.Manager().Path("ffprobe"),
 			}, d, r)
 		},
 		OnChange: changed,

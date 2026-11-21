@@ -163,6 +163,8 @@ type TranslationSettings struct {
 	ReasoningEffort string `json:"reasoningEffort"`
 	// Concurrency is how many requests run at once; 0 is the default.
 	Concurrency int `json:"concurrency"`
+	// Output is where the subtitles go: embed (into the video) or files.
+	Output string `json:"output"`
 }
 
 // UpdateSettings turn the automatic updates of the tools and the app on.
@@ -270,7 +272,7 @@ func DefaultSettings(downloadDir string) Settings {
 			FormatPreference: append([]string(nil), DefaultSubtitleFormats...),
 			EmbedSubtitles:   true,
 		},
-		Translation:   TranslationSettings{TargetLanguage: "简体中文", Concurrency: 6},
+		Translation:   TranslationSettings{TargetLanguage: "简体中文", Concurrency: 6, Output: "embed"},
 		Update:        UpdateSettings{UpdateBinaries: true, UpdateApp: true},
 		System:        SystemSettings{CloseBehavior: CloseExit},
 		Notifications: NotificationSettings{NotificationBehavior: NotifyNever, DisabledNotifications: []string{}},

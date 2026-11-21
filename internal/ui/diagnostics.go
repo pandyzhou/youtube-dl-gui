@@ -43,6 +43,7 @@ var diagnosticText = map[string][2]string{
 	"translationSourceMissing":      {"没有可翻译的字幕", "没有生成双语字幕：这个视频没有能下载的原文字幕。"},
 	"translationFailed":             {"字幕翻译失败", "双语字幕生成失败，视频本身已经下载完成。"},
 	"translationPartial":            {"部分字幕未翻译", "有部分字幕没有翻译成功，这些地方只显示原文。"},
+	"translationEmbedFailed":        {"字幕没有放进视频", "双语字幕已生成，但没能放进视频（视频可能正在播放或磁盘空间不足），已保存在视频旁边。"},
 	"rejectedByFilter":              {"已被筛选", "此项目已被您的输入筛选条件排除。"},
 	"input_filter_skipped":          {"已跳过", "这个视频不符合输入筛选条件，已跳过。"},
 }
