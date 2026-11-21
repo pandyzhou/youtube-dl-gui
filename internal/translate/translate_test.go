@@ -86,8 +86,11 @@ func TestMakeBatches(t *testing.T) {
 	for _, x := range b {
 		sizes = append(sizes, len(x.lines))
 	}
-	if !reflect.DeepEqual(sizes, []int{250, 250, 100}) || b[1].start != 250 || len(b[1].context) != 5 {
+	if !reflect.DeepEqual(sizes, []int{120, 120, 120, 120, 120}) || b[1].start != 120 || len(b[1].context) != 5 {
 		t.Errorf("sizes %v", sizes)
+	}
+	if len(b[0].after) != 3 || len(b[4].after) != 0 {
+		t.Errorf("following context %d, %d", len(b[0].after), len(b[4].after))
 	}
 	long := []string{strings.Repeat("y", 3000), strings.Repeat("y", 3000), strings.Repeat("y", 3000)}
 	if b := makeBatches(long); len(b) != 3 {
@@ -98,6 +101,9 @@ func TestMakeBatches(t *testing.T) {
 func TestParseTranslations(t *testing.T) {
 	if got, ok := ParseTranslations("```json\n[\"你好\", \"[音乐]\"]\n```"); !ok || !reflect.DeepEqual(got, []string{"你好", "[音乐]"}) {
 		t.Errorf("fenced: %q %v", got, ok)
+	}
+	if got, ok := ParseTranslations("<think>Maybe [music] is a tag.</think>\n[\"好\"]"); !ok || !reflect.DeepEqual(got, []string{"好"}) {
+		t.Errorf("think: %q %v", got, ok)
 	}
 	if _, ok := ParseTranslations("sorry"); ok {
 		t.Error("prose accepted")
@@ -244,6 +250,22 @@ func TestAfterDownloadWarnings(t *testing.T) {
 	AfterDownload(context.Background(), e, d, rec.reporter())
 	if len(rec.stages) != 0 {
 		t.Error("audio translated")
+	}
+}
+
+func TestPromptAndContext(t *testing.T) {
+	if p := prompt("简体中文"); !strings.Contains(p, "into 简体中文") || !strings.Contains(p, "pronouns") || strings.Contains(p, "{") {
+		t.Errorf("chinese prompt %q", p)
+	}
+	if p := prompt("English"); strings.Contains(p, "pronouns") || strings.Contains(p, "{style}") {
+		t.Errorf("english prompt %q", p)
+	}
+	d := engine.Finished{Title: "Fallback", Video: &ytdlp.Video{Title: "Snow test", Uploader: "Cars", Description: "line one\n\nline   two"}}
+	if got := videoContext(d); got != "Title: Snow test\nChannel: Cars\nDescription: line one line two\n" {
+		t.Errorf("video context %q", got)
+	}
+	if got := videoContext(engine.Finished{Title: "Only"}); got != "Title: Only\n" {
+		t.Errorf("title only %q", got)
 	}
 }
 

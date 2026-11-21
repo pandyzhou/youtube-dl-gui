@@ -24,30 +24,44 @@ import (
 	"github.com/pandyzhou/youtube-dl-gui/internal/ytdlp"
 )
 
-// Tuning, as in the old app.
+// Tuning.
 const (
 	// batchChars bounds the source characters per request, so the reply
 	// stays under the output limit many providers apply.
-	batchChars = 5000
-	// batchMaxLines bounds the lines per request, so the model reliably
-	// returns one translation per line.
-	batchMaxLines = 250
-	// contextLines go along with a batch for context only.
+	batchChars = 2500
+	// batchMaxLines bounds the lines per request: smaller batches keep the
+	// model returning exactly one translation per line.
+	batchMaxLines = 120
+	// contextLines before a batch and followLines after it go along for
+	// context only, so sentences cut by the batch edge read right.
 	contextLines = 5
-	concurrency  = 6
-	maxAttempts  = 3
+	followLines  = 3
+	// descriptionChars bounds the video description sent as context.
+	descriptionChars = 300
+	concurrency      = 6
+	maxAttempts      = 3
 	// DefaultTargetLanguage is used when the setting is empty.
 	DefaultTargetLanguage = "简体中文"
 )
 
-const systemPrompt = "You translate video subtitles. Translate every line of the JSON " +
-	"array the user asks you to translate into {target}. The lines are consecutive subtitles from " +
-	"one video, often produced by automatic speech recognition, so they can contain recognition " +
-	"errors and sentences split across lines; use the neighbouring lines to work out what is " +
-	"meant. The user may also send a few earlier lines for context only: never translate or return " +
-	"those. Keep each translation short enough to read as a subtitle, and translate sound tags such " +
-	"as [music] too, keeping the brackets. Reply with only a JSON array of strings: exactly one " +
-	"translation per line to translate, in the same order, with nothing before or after it."
+const systemPrompt = `You translate video subtitles into {target}.
+
+The user sends a JSON array of consecutive subtitle lines from one video. Reply with only a JSON array of strings: exactly one translation per line, in the same order, with nothing before or after it.
+
+- The lines often come from automatic speech recognition: punctuation and capitals may be missing, words may be misheard, and one sentence is often split across several lines. Use the surrounding lines and the video's title and description to work out what was meant, and translate that, quietly fixing obvious recognition errors.
+- When a sentence spans several lines, give each line the part of the translation that matches it. You may move words between lines of the same sentence so the translation reads naturally, but never merge lines and never leave a line empty.
+- Keep each translation short enough to read as a subtitle. Write natural spoken language, not translationese.
+- Translate sound tags such as [music] too, keeping the brackets.
+- Keep names of people, channels, brands and products as they are unless they have a well-known translation.
+- The user may also send the video's title and description and lines before and after the ones to translate. They are context only: never translate or return them.{style}
+
+Example, into 简体中文:
+["so today we're going to look at how the", "new tesla model why handles in the snow", "[music]"]
+Reply:
+["今天我们来看看", "新款特斯拉 Model Y 在雪地里表现如何", "[音乐]"]`
+
+// chineseStyle is added to the prompt for Chinese targets.
+const chineseStyle = "\n- Write Chinese the way people speak it: drop pronouns Chinese would leave out, use Chinese punctuation within a line and no full stop at the end of a line."
 
 // Diagnostic codes of translation problems (explained in the UI).
 const (
@@ -133,6 +147,7 @@ func run(ctx context.Context, env Env, d engine.Finished, r engine.Reporter) (st
 	if len(cues) == 0 {
 		return "", 0, &failure{CodeSourceMissing, "字幕是空的。"}
 	}
+	chat.video = videoContext(d)
 	translations, err := translateCues(ctx, env, chat, cues, r)
 	if err != nil {
 		return "", 0, err
@@ -152,6 +167,8 @@ func run(ctx context.Context, env Env, d engine.Finished, r engine.Reporter) (st
 
 type chat struct {
 	endpoint, model, apiKey, target string
+	// video describes the video (title, channel, description) as context.
+	video string
 }
 
 func chatConfig(env Env) (chat, error) {
@@ -172,6 +189,36 @@ func chatConfig(env Env) (chat, error) {
 		target = DefaultTargetLanguage
 	}
 	return chat{endpoint, model, strings.TrimSpace(env.APIKey), target}, nil
+}
+
+// videoContext describes a video for the model: its title, channel and
+// the start of its description.
+func videoContext(d engine.Finished) string {
+	title, channel, description := d.Title, "", ""
+	if v := d.Video; v != nil {
+		if v.Title != "" {
+			title = v.Title
+		}
+		channel = v.Uploader
+		description = truncate(strings.Join(strings.Fields(v.Description), " "), descriptionChars)
+	}
+	var b strings.Builder
+	for _, f := range [][2]string{{"Title", title}, {"Channel", channel}, {"Description", description}} {
+		if v := strings.TrimSpace(f[1]); v != "" {
+			b.WriteString(f[0] + ": " + v + "\n")
+		}
+	}
+	return b.String()
+}
+
+// prompt is the system prompt for a target language.
+func prompt(target string) string {
+	style := ""
+	lower := strings.ToLower(target)
+	if strings.Contains(target, "中文") || strings.Contains(target, "汉语") || strings.Contains(lower, "chinese") || strings.HasPrefix(lower, "zh") {
+		style = chineseStyle
+	}
+	return strings.NewReplacer("{target}", target, "{style}", style).Replace(systemPrompt)
 }
 
 // ChatCompletionsURL is {base}/chat/completions, unless the address
@@ -271,15 +318,17 @@ func fetchSource(ctx context.Context, env Env, url string, s Source, dir string)
 	return matches[0], nil
 }
 
-// batch is a run of consecutive cues sent in one request.
+// batch is a run of consecutive cues sent in one request, with the lines
+// around it as context.
 type batch struct {
 	start   int
 	context []string
 	lines   []string
+	after   []string
 }
 
 // makeBatches packs as many lines as fit in batchChars (at most
-// batchMaxLines) per request, each with the lines before it as context.
+// batchMaxLines) per request, each with the lines around it as context.
 func makeBatches(texts []string) []batch {
 	var out []batch
 	for start := 0; start < len(texts); {
@@ -292,7 +341,12 @@ func makeBatches(texts []string) []batch {
 			chars += n
 			end++
 		}
-		out = append(out, batch{start: start, context: texts[max(start-contextLines, 0):start], lines: texts[start:end]})
+		out = append(out, batch{
+			start:   start,
+			context: texts[max(start-contextLines, 0):start],
+			lines:   texts[start:end],
+			after:   texts[end:min(end+followLines, len(texts))],
+		})
 		start = end
 	}
 	return out
@@ -330,7 +384,7 @@ func translateCues(ctx context.Context, env Env, c chat, cues []Cue, r engine.Re
 				<-sem
 				wg.Done()
 			}()
-			lines, err := translateBatch(ctx, env, c, b.context, b.lines)
+			lines, err := translateBatch(ctx, env, c, b)
 			mu.Lock()
 			defer mu.Unlock()
 			var f errFatal
@@ -360,25 +414,35 @@ func translateCues(ctx context.Context, env Env, c chat, cues []Cue, r engine.Re
 
 // translateBatch translates one batch; when it keeps failing (usually a
 // reply cut off or missing a line), its halves go separately.
-func translateBatch(ctx context.Context, env Env, c chat, prior, lines []string) ([]string, error) {
-	out, err := translateWithRetries(ctx, env, c, prior, lines)
+func translateBatch(ctx context.Context, env Env, c chat, b batch) ([]string, error) {
+	out, err := translateWithRetries(ctx, env, c, b)
 	var f errFatal
+	lines := b.lines
 	if err == nil || errors.As(err, &f) || len(lines) < 2 {
 		return out, err
 	}
 	half := len(lines) / 2
-	first, err := translateWithRetries(ctx, env, c, prior, lines[:half])
+	first, err := translateWithRetries(ctx, env, c, batch{
+		context: b.context,
+		lines:   lines[:half],
+		after:   lines[half:min(half+followLines, len(lines))],
+	})
 	if err != nil {
 		return nil, err
 	}
-	second, err := translateWithRetries(ctx, env, c, lines[max(half-contextLines, 0):half], lines[half:])
+	second, err := translateWithRetries(ctx, env, c, batch{
+		context: lines[max(half-contextLines, 0):half],
+		lines:   lines[half:],
+		after:   b.after,
+	})
 	if err != nil {
 		return nil, err
 	}
 	return append(first, second...), nil
 }
 
-func translateWithRetries(ctx context.Context, env Env, c chat, prior, lines []string) ([]string, error) {
+func translateWithRetries(ctx context.Context, env Env, c chat, b batch) ([]string, error) {
+	lines := b.lines
 	var last error
 	for attempt := 0; attempt < maxAttempts; attempt++ {
 		if attempt > 0 {
@@ -392,7 +456,7 @@ func translateWithRetries(ctx context.Context, env Env, c chat, prior, lines []s
 			case <-time.After(delay):
 			}
 		}
-		out, err := request(ctx, env, c, prior, lines)
+		out, err := request(ctx, env, c, b)
 		var f errFatal
 		switch {
 		case err == nil && len(out) == len(lines):
@@ -413,16 +477,24 @@ func jsonArray(lines []string) string {
 	return string(b)
 }
 
-func request(ctx context.Context, env Env, c chat, prior, lines []string) ([]string, error) {
+// request sends one batch. The lines to translate come last, after the
+// context.
+func request(ctx context.Context, env Env, c chat, b batch) ([]string, error) {
 	var user strings.Builder
-	if len(prior) > 0 {
-		user.WriteString("Earlier lines for context only, do not translate:\n" + jsonArray(prior) + "\n\n")
+	if c.video != "" {
+		user.WriteString("About the video, for context only:\n" + c.video + "\n")
 	}
-	fmt.Fprintf(&user, "Translate these %d lines:\n%s", len(lines), jsonArray(lines))
+	if len(b.context) > 0 {
+		user.WriteString("Lines just before, for context only, do not translate:\n" + jsonArray(b.context) + "\n\n")
+	}
+	if len(b.after) > 0 {
+		user.WriteString("Lines just after, for context only, do not translate:\n" + jsonArray(b.after) + "\n\n")
+	}
+	fmt.Fprintf(&user, "Translate these %d lines:\n%s", len(b.lines), jsonArray(b.lines))
 	body, _ := json.Marshal(map[string]any{
 		"model": c.model,
 		"messages": []map[string]string{
-			{"role": "system", "content": strings.ReplaceAll(systemPrompt, "{target}", c.target)},
+			{"role": "system", "content": prompt(c.target)},
 			{"role": "user", "content": user.String()},
 		},
 	})
@@ -473,8 +545,12 @@ func request(ctx context.Context, env Env, c chat, prior, lines []string) ([]str
 }
 
 // ParseTranslations pulls the JSON array of strings out of a model reply,
-// tolerating code fences around it.
+// tolerating code fences around it and a reasoning model's <think> block
+// before it.
 func ParseTranslations(content string) ([]string, bool) {
+	if _, after, ok := strings.Cut(content, "</think>"); ok {
+		content = after
+	}
 	start, end := strings.Index(content, "["), strings.LastIndex(content, "]")
 	if start < 0 || end <= start {
 		return nil, false
