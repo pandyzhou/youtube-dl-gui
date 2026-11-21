@@ -41,8 +41,8 @@ const (
 	// transcriptChars bounds the transcript read in high quality mode.
 	transcriptChars = 30000
 	maxTerms        = 20
-	concurrency      = 6
-	maxAttempts      = 3
+	concurrency     = 6
+	maxAttempts     = 3
 	// DefaultTargetLanguage is used when the setting is empty.
 	DefaultTargetLanguage = "简体中文"
 )
