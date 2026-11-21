@@ -158,6 +158,9 @@ type TranslationSettings struct {
 	// HighQuality reads the whole transcript first for a topic and a
 	// glossary that every batch gets.
 	HighQuality bool `json:"highQuality"`
+	// ReasoningEffort goes to the API as reasoning_effort (none, minimal,
+	// low, medium, high); "" leaves it out.
+	ReasoningEffort string `json:"reasoningEffort"`
 }
 
 // UpdateSettings turn the automatic updates of the tools and the app on.

@@ -14,6 +14,8 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"slices"
+	"sort"
 	"strings"
 	"sync"
 	"time"
@@ -198,6 +200,8 @@ func run(ctx context.Context, env Env, d engine.Finished, r engine.Reporter) (st
 
 type chat struct {
 	endpoint, model, apiKey, target string
+	// effort is the reasoning effort, "" for the model's default.
+	effort string
 	// video describes the video (title, channel, description) as context.
 	video string
 	// notes are the topic and glossary of high quality mode.
@@ -221,7 +225,13 @@ func chatConfig(env Env) (chat, error) {
 	if target == "" {
 		target = DefaultTargetLanguage
 	}
-	return chat{endpoint: endpoint, model: model, apiKey: strings.TrimSpace(env.APIKey), target: target}, nil
+	return chat{
+		endpoint: endpoint,
+		model:    model,
+		apiKey:   strings.TrimSpace(env.APIKey),
+		target:   target,
+		effort:   strings.TrimSpace(s.ReasoningEffort),
+	}, nil
 }
 
 // videoContext describes a video for the model: its title, channel and
@@ -252,6 +262,63 @@ func prompt(target string) string {
 		style = chineseStyle
 	}
 	return strings.NewReplacer("{target}", target, "{style}", style).Replace(systemPrompt)
+}
+
+// ModelsURL is the model list of an OpenAI-compatible API: {base}/models,
+// with a trailing /chat/completions dropped.
+func ModelsURL(base string) (string, bool) {
+	base = strings.TrimRight(strings.TrimSpace(base), "/")
+	base = strings.TrimSuffix(base, "/chat/completions")
+	if base == "" {
+		return "", false
+	}
+	return base + "/models", true
+}
+
+// ListModels asks an OpenAI-compatible API for its models, sorted by ID.
+func ListModels(ctx context.Context, client *http.Client, base, apiKey string) ([]string, error) {
+	endpoint, ok := ModelsURL(base)
+	if !ok {
+		return nil, errors.New("没有填写接口地址")
+	}
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, endpoint, nil)
+	if err != nil {
+		return nil, err
+	}
+	if key := strings.TrimSpace(apiKey); key != "" {
+		req.Header.Set("Authorization", "Bearer "+key)
+	}
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+	data, err := io.ReadAll(io.LimitReader(resp.Body, 8<<20))
+	if err != nil {
+		return nil, err
+	}
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("HTTP %d: %s", resp.StatusCode, truncate(string(data), 200))
+	}
+	var list struct {
+		Data []struct {
+			ID string `json:"id"`
+		} `json:"data"`
+	}
+	if err := json.Unmarshal(data, &list); err != nil {
+		return nil, fmt.Errorf("返回的不是模型列表：%w", err)
+	}
+	var models []string
+	for _, m := range list.Data {
+		if id := strings.TrimSpace(m.ID); id != "" && !slices.Contains(models, id) {
+			models = append(models, id)
+		}
+	}
+	if len(models) == 0 {
+		return nil, errors.New("接口没有返回任何模型")
+	}
+	sort.Strings(models)
+	return models, nil
 }
 
 // ChatCompletionsURL is {base}/chat/completions, unless the address
@@ -646,13 +713,17 @@ func request(ctx context.Context, env Env, c chat, b batch) ([]string, error) {
 
 // complete sends one chat request and returns the reply's text.
 func complete(ctx context.Context, env Env, c chat, system, user string) (string, error) {
-	body, _ := json.Marshal(map[string]any{
+	payload := map[string]any{
 		"model": c.model,
 		"messages": []map[string]string{
 			{"role": "system", "content": system},
 			{"role": "user", "content": user},
 		},
-	})
+	}
+	if c.effort != "" {
+		payload["reasoning_effort"] = c.effort
+	}
+	body, _ := json.Marshal(payload)
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, c.endpoint, bytes.NewReader(body))
 	if err != nil {
 		return "", errFatal{err.Error()}

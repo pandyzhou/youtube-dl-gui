@@ -29,6 +29,11 @@ type settingsState struct {
 	query   string
 	section int
 	err     string
+
+	// The translation API's models, once fetched.
+	models     []string
+	modelsBusy bool
+	modelsErr  string
 }
 
 // settingRow is one setting: where it is, what it is called and explained
@@ -281,6 +286,50 @@ func (a *App) pathField(c *ui.Context, label string, value *string, folder bool,
 	}
 }
 
+// modelField edits the translation model, with a button that fetches the
+// API's models into a list to choose from.
+func (a *App) modelField(c *ui.Context, p palette) func() {
+	return func() {
+		model := &a.s.draft.Translation.Model
+		ui.Column(c).Gap(6).AlignItems(ui.Start).Children(func() {
+			ui.Row(c).Gap(8).AlignItems(ui.Center).Wrap().Children(func() {
+				ui.TextInput(c, model).Label("模型").Placeholder("gpt-4o-mini").Width(220).Height(32)
+				label := "获取模型"
+				if a.s.modelsBusy {
+					label = "正在获取…"
+				}
+				if a.deps.ListModels != nil && ui.Button(c, label).Height(32).Disabled(a.s.modelsBusy).Clicked() {
+					a.s.modelsBusy, a.s.modelsErr = true, ""
+					a.deps.ListModels(a.s.draft.Translation.BaseURL, a.s.secrets[secrets.TranslationAPIKey], func(models []string, err error) {
+						a.s.modelsBusy = false
+						if err != nil {
+							a.s.models, a.s.modelsErr = nil, "获取模型失败："+err.Error()
+							return
+						}
+						a.s.models = models
+					})
+				}
+				if len(a.s.models) > 0 {
+					labels := append([]string{"选择模型…"}, a.s.models...)
+					current := labels[0]
+					if slices.Contains(a.s.models, *model) {
+						current = *model
+					}
+					if ui.Select(c, &current, labels).Width(260).Height(32).Label("可用模型").Changed() && current != labels[0] {
+						*model = current
+					}
+				}
+			})
+			switch {
+			case a.s.modelsErr != "":
+				ui.Text(c, a.s.modelsErr).FontSize(12).TextColor(c.Theme().Danger)
+			case len(a.s.models) > 0:
+				ui.Text(c, "接口提供 "+strconv.Itoa(len(a.s.models))+" 个模型。").FontSize(12).TextColor(p.muted)
+			}
+		})
+	}
+}
+
 // secretField edits a secret, saved to the system's credential store.
 func (a *App) secretField(c *ui.Context, label, key string, multiline bool, placeholder string) func() {
 	return func() {
@@ -364,7 +413,8 @@ func (a *App) settingRows(c *ui.Context, p palette) []settingRow {
 		{subtitles, "字幕格式优先级", "按顺序选第一个可用的格式。", "srt vtt ass", csvField(c, "字幕格式优先级", &s.Subtitles.FormatPreference, "srt, vtt"), false},
 		{subtitles, "AI 双语字幕", "", "翻译 双语", toggle(c, "AI 双语字幕 ", &s.Translation.Enabled), false},
 		{subtitles, "接口地址", "OpenAI 兼容接口的地址。", "翻译 api url", textField(c, "接口地址", &s.Translation.BaseURL, "https://api.openai.com/v1", 300), false},
-		{subtitles, "模型", "", "翻译 model", textField(c, "模型", &s.Translation.Model, "gpt-4o-mini", 200), false},
+		{subtitles, "模型", "可以手动填写，或从接口获取可用的模型。", "翻译 model 模型 获取", a.modelField(c, p), true},
+		{subtitles, "思考强度", "推理模型思考得越深，翻译越慢、费用越高。模型不支持时请选“默认”。", "翻译 思考 推理 reasoning effort", choice(c, "思考强度", &s.Translation.ReasoningEffort, []string{"", "none", "minimal", "low", "medium", "high"}, []string{"默认", "关闭思考", "最低", "低", "中", "高"}, 150), false},
 		{subtitles, "目标语言", "翻译成的语言。", "翻译 language", textField(c, "目标语言", &s.Translation.TargetLanguage, "简体中文", 200), false},
 		{subtitles, "高质量模式", "翻译前先让 AI 通读全部字幕，整理出主题和术语表，人名和专有名词更准、前后一致。每个视频多一次请求。", "翻译 高质量 术语 质量", toggle(c, "高质量模式", &s.Translation.HighQuality), false},
 		{subtitles, "API Key", "保存在系统凭据中。", "翻译 密钥 key", a.secretField(c, "API Key", secrets.TranslationAPIKey, false, "sk-…"), false},

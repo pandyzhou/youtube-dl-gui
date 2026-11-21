@@ -2,6 +2,7 @@
 package main
 
 import (
+	"context"
 	"log"
 	"log/slog"
 	"path/filepath"
@@ -22,6 +23,7 @@ import (
 	"github.com/pandyzhou/youtube-dl-gui/internal/formats"
 	"github.com/pandyzhou/youtube-dl-gui/internal/httpx"
 	"github.com/pandyzhou/youtube-dl-gui/internal/secrets"
+	"github.com/pandyzhou/youtube-dl-gui/internal/translate"
 	appui "github.com/pandyzhou/youtube-dl-gui/internal/ui"
 )
 
@@ -108,6 +110,18 @@ func main() {
 		},
 		ShowInFolder: mygo.Shell.ShowItemInFolder,
 		CheckUpdates: updater.CheckForUpdates,
+		ListModels: func(baseURL, apiKey string, done func([]string, error)) {
+			client := httpx.Client(c.Settings().Network, 20*time.Second)
+			go func() {
+				ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
+				defer cancel()
+				models, err := translate.ListModels(ctx, client, baseURL, apiKey)
+				mygo.RunOnMain(func() {
+					done(models, err)
+					redraw()
+				})
+			}()
+		},
 		PickPath: func(title, current string, folder bool, done func(string)) {
 			go func() {
 				paths, err := mygo.Dialog.Open(mygo.OpenDialogOptions{

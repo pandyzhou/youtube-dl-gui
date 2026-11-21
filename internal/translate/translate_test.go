@@ -391,6 +391,45 @@ func TestAutomaticCaptionsUseJSON3(t *testing.T) {
 	}
 }
 
+func TestListModelsAndEffort(t *testing.T) {
+	var effort any
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch {
+		case r.URL.Path == "/v1/models" && r.Header.Get("Authorization") == "Bearer sk-test":
+			w.Write([]byte(`{"data": [{"id": "m-2"}, {"id": "m-1"}, {"id": "m-2"}]}`))
+		case r.URL.Path == "/v1/chat/completions":
+			var body map[string]any
+			json.NewDecoder(r.Body).Decode(&body)
+			effort = body["reasoning_effort"]
+			w.Write([]byte(`{"choices": [{"message": {"content": "[\"好\"]"}, "finish_reason": "stop"}]}`))
+		default:
+			http.Error(w, "no", http.StatusUnauthorized)
+		}
+	}))
+	t.Cleanup(srv.Close)
+	models, err := ListModels(context.Background(), srv.Client(), srv.URL+"/v1/chat/completions", "sk-test")
+	if err != nil || !reflect.DeepEqual(models, []string{"m-1", "m-2"}) {
+		t.Fatalf("models %q, %v", models, err)
+	}
+	if _, err := ListModels(context.Background(), srv.Client(), srv.URL+"/v1", "wrong"); err == nil {
+		t.Error("rejected key listed models")
+	}
+
+	e := env(t, srv, nil)
+	c, err := chatConfig(e)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := request(context.Background(), e, c, batch{lines: []string{"hi"}}); err != nil || effort != nil {
+		t.Errorf("default effort sent: %v, %v", effort, err)
+	}
+	e.Settings.Translation.ReasoningEffort = "low"
+	c, _ = chatConfig(e)
+	if _, err := request(context.Background(), e, c, batch{lines: []string{"hi"}}); err != nil || effort != "low" {
+		t.Errorf("effort %v, %v", effort, err)
+	}
+}
+
 func TestPartialTranslation(t *testing.T) {
 	srv := chatServer(t, func(lines []string) (int, string) {
 		if len(lines) > 1 {

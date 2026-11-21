@@ -55,6 +55,9 @@ type Deps struct {
 	// PickPath asks for a folder (or a file) and calls done on the main
 	// thread with it, or "" when canceled.
 	PickPath func(title, current string, folder bool, done func(path string))
+	// ListModels asks the translation API for its models and calls done on
+	// the main thread.
+	ListModels func(baseURL, apiKey string, done func(models []string, err error))
 }
 
 // App is the state of the main window.

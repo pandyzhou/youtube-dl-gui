@@ -105,6 +105,35 @@ func TestSettingsSearchAndSections(t *testing.T) {
 	}
 }
 
+func TestFetchModels(t *testing.T) {
+	f := newFakeSettings()
+	f.s.Translation.BaseURL = "https://api.example.com/v1"
+	f.secrets[secrets.TranslationAPIKey] = "sk-test"
+	d := f.deps()
+	var asked [2]string
+	d.ListModels = func(baseURL, apiKey string, done func([]string, error)) {
+		asked = [2]string{baseURL, apiKey}
+		done([]string{"model-a", "model-b"}, nil)
+	}
+	a := New(d)
+	a.router.Replace("/settings")
+	a.s.section = 2
+	tt := ui.NewTester(a.View, 1000, 1400)
+	if !tt.HasText("思考强度") {
+		t.Fatalf("no reasoning effort row, texts %q", tt.Texts())
+	}
+	if err := tt.Click("获取模型"); err != nil {
+		t.Fatal(err)
+	}
+	tt.Frame()
+	if asked != [2]string{"https://api.example.com/v1", "sk-test"} || !tt.HasText("接口提供 2 个模型。") {
+		t.Fatalf("asked %q, texts %q", asked, tt.Texts())
+	}
+	if !tt.HasText("选择模型…") {
+		t.Errorf("no model list, texts %q", tt.Texts())
+	}
+}
+
 func TestSettingsSecrets(t *testing.T) {
 	f := newFakeSettings()
 	a := New(f.deps())
