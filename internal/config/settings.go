@@ -54,6 +54,9 @@ type InputSettings struct {
 	// AutoDownload starts a download as soon as a link's information is in,
 	// with the default preset; new in the MyGo app.
 	AutoDownload bool `json:"autoDownload"`
+	// MixedLinks is what a link to a video in a playlist adds: ask, video
+	// or list. PreferVideoInMixedLinks follows it, for older settings.
+	MixedLinks string `json:"mixedLinks"`
 }
 
 // Size units of the input filters.

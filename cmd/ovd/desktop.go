@@ -121,8 +121,9 @@ func (d *desktop) addClipboard(start bool) {
 		d.notify("剪贴板里没有链接", "复制视频链接后再试。")
 		return
 	}
+	mixed := d.core.Settings().Input.MixedLinks
 	for _, u := range urls {
-		d.queue.Add(u, engine.AddOptions{Start: start})
+		d.queue.Add(u, engine.AddOptions{Start: start, Playlist: formats.MixedMode(u, mixed)})
 	}
 	d.redraw()
 }

@@ -85,6 +85,15 @@ func Normalize(s Settings, downloadDir string) Settings {
 	if s.Output.FileNameTemplate == "" {
 		s.Output.FileNameTemplate = DefaultFileNameTemplate
 	}
+	switch s.Input.MixedLinks {
+	case "ask", "video", "list":
+	default:
+		s.Input.MixedLinks = "ask"
+		if s.Input.PreferVideoInMixedLinks {
+			s.Input.MixedLinks = "video"
+		}
+	}
+	s.Input.PreferVideoInMixedLinks = s.Input.MixedLinks == "video"
 	if s.Translation.Concurrency <= 0 {
 		s.Translation.Concurrency = d.Translation.Concurrency
 	}

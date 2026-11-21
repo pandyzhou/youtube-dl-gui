@@ -149,6 +149,9 @@ func (e *Engine) Add(url string, o AddOptions) string {
 		autoStart: o.Start || o.Existing != "", existing: o.Existing,
 		filters: formats.InputFilters(settings.InputFilters), added: time.Now(),
 	}
+	if o.Playlist != ytdlp.PlaylistModeNone {
+		j.filters.PlaylistMode = o.Playlist
+	}
 	j.fetchCtx, j.fetchCancel = context.WithCancel(context.Background())
 	j.items = []*item{e.newItem(j.url, -1)}
 	e.jobs = append([]*job{j}, e.jobs...)

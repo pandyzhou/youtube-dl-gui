@@ -146,6 +146,9 @@ type AddOptions struct {
 	// Existing is a file downloaded before: instead of downloading, the
 	// job makes its subtitles. It starts by itself.
 	Existing string
+	// Playlist forces a link to a video in a playlist to be the video or
+	// the playlist; none follows the settings.
+	Playlist ytdlp.PlaylistMode
 }
 
 // ItemView is a snapshot of one video.

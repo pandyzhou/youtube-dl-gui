@@ -441,7 +441,7 @@ func (a *App) settingRows(c *ui.Context, p palette) []settingRow {
 		{files, "音频单独保存到", "留空则使用下载位置。", "文件夹 目录", a.pathField(c, "音频单独保存到", &paths.AudioDownloadDir, true, "使用下载位置"), true},
 		{files, "视频子文件夹", "例如 %(uploader)s，按作者分文件夹。", "模板 文件夹", textField(c, "视频子文件夹", &paths.VideoDirectoryTemplate, "不使用子文件夹", 260), false},
 		{files, "音频子文件夹", "", "模板 文件夹", textField(c, "音频子文件夹", &paths.AudioDirectoryTemplate, "不使用子文件夹", 260), false},
-		{files, "链接含播放列表时只下视频", "链接同时指向视频和播放列表时，只下载这个视频。", "播放列表 mixed", toggle(c, "链接含播放列表时只下视频", &s.Input.PreferVideoInMixedLinks), false},
+		{files, "链接同时含视频和播放列表时", "例如在播放列表或合辑里打开的视频。快捷键和托盘加入的链接在“每次询问”时只下载视频。", "播放列表 合辑 mix mixed 列表", choice(c, "链接同时含视频和播放列表时", &s.Input.MixedLinks, []string{"ask", "video", "list"}, []string{"每次询问", "只下载这个视频", "下载整个列表"}, 160), false},
 		{files, "同时下载数量", "同时获取信息和下载的项目数。", "并发 速度", number(c, "同时下载数量", &s.Performance.MaxConcurrency, 1, 10), false},
 		{files, "分片并发数", "分片视频（HLS/DASH）同时下载的分片数，1 为不并发。", "并发 速度 fragments", number(c, "分片并发数", &s.Performance.ConcurrentFragments, 1, 16), false},
 		{files, "播放列表拆分", "视频数少于这个数的播放列表拆成单独的卡片。", "合并 拆分", number(c, "播放列表拆分", &s.Performance.SplitPlaylistThreshold, 1, 500), false},

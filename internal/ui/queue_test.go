@@ -20,6 +20,7 @@ type fakeQueue struct {
 	starts   []bool
 	calls    []string
 	selected [][]formats.SelectionRow
+	modes    []ytdlp.PlaylistMode
 }
 
 func (f *fakeQueue) Jobs() []engine.JobView {
@@ -29,6 +30,7 @@ func (f *fakeQueue) Jobs() []engine.JobView {
 func (f *fakeQueue) Add(url string, o engine.AddOptions) string {
 	f.added = append(f.added, url)
 	f.starts = append(f.starts, o.Start)
+	f.modes = append(f.modes, o.Playlist)
 	f.jobs = append([]engine.JobView{{ID: url, URL: url, Title: url, Status: engine.StatusFetching}}, f.jobs...)
 	return url
 }
@@ -327,4 +329,52 @@ func showCustom(a *App) {
 	q := a.queue.(*fakeQueue)
 	q.jobs = append([]engine.JobView{customJob()}, q.jobs...)
 	q.SetCustom("c", ytdlp.FormatOptions{TrackType: ytdlp.TrackBoth, Height: 1080, Fps: 30, VideoEncoding: "vp9"})
+}
+
+func TestMixedLinkDialog(t *testing.T) {
+	q := &fakeQueue{}
+	f := newFakeSettings()
+	d := f.deps()
+	d.Queue = q
+	a := New(d)
+	tt := ui.NewTester(a.View, 1000, 700)
+	a.q.link = "https://www.youtube.com/watch?v=TAMyLwW9HW8&list=RDTAMyLwW9HW8&start_radio=1\nhttps://www.youtube.com/watch?v=plain"
+	a.addLinks(true)
+	tt.Frame()
+	if len(q.added) != 1 || q.added[0] != "https://www.youtube.com/watch?v=plain" {
+		t.Fatalf("added before the choice: %q", q.added)
+	}
+	if !tt.HasText("这个链接同时包含视频和播放列表") || !tt.HasText("这是 YouTube 根据视频自动生成的合辑，可以无限往下播，整个列表可能有几百个视频。") {
+		t.Fatalf("no dialog, texts %q", tt.Texts())
+	}
+	if err := tt.Click("只下载这个视频"); err != nil {
+		t.Fatal(err)
+	}
+	tt.Frame()
+	if len(q.added) != 2 || q.modes[1] != ytdlp.PlaylistModeSingle || !q.starts[1] {
+		t.Fatalf("after choosing: %q %q", q.added, q.modes)
+	}
+	if tt.HasText("这个链接同时包含视频和播放列表") {
+		t.Error("dialog still open")
+	}
+
+	// Remembered: the next one adds the list without asking.
+	a.q.link = "https://www.youtube.com/watch?v=a&list=PLx"
+	a.addLinks(false)
+	tt.Frame()
+	tt.Click("记住我的选择，以后不再询问")
+	tt.Frame()
+	if err := tt.Click("下载整个列表"); err != nil {
+		t.Fatal(err)
+	}
+	tt.Frame()
+	if f.s.Input.MixedLinks != formats.MixedList || q.modes[len(q.modes)-1] != ytdlp.PlaylistModeAll {
+		t.Fatalf("setting %q, modes %q", f.s.Input.MixedLinks, q.modes)
+	}
+	a.q.link = "https://youtu.be/b?list=PLy"
+	a.addLinks(false)
+	tt.Frame()
+	if tt.HasText("这个链接同时包含视频和播放列表") || q.modes[len(q.modes)-1] != ytdlp.PlaylistModeAll {
+		t.Errorf("asked again or wrong mode: %q", q.modes)
+	}
 }

@@ -10,6 +10,7 @@ import (
 	"github.com/egoist/mygo/ui"
 	"github.com/egoist/mygo/ui/netimage"
 
+	"github.com/pandyzhou/youtube-dl-gui/internal/config"
 	"github.com/pandyzhou/youtube-dl-gui/internal/core"
 	"github.com/pandyzhou/youtube-dl-gui/internal/engine"
 	"github.com/pandyzhou/youtube-dl-gui/internal/formats"
@@ -56,6 +57,16 @@ type queueState struct {
 
 	detailJob string // job shown in place of the list
 	detailTab int
+
+	// Links to a video in a playlist waiting for the user's choice.
+	mixed         []pendingLink
+	mixedRemember bool
+}
+
+// pendingLink is a link to add once the user chose video or playlist.
+type pendingLink struct {
+	url, preset string
+	start       bool
 }
 
 func (a *App) addLinks(start bool) {
@@ -64,10 +75,7 @@ func (a *App) addLinks(start bool) {
 		a.q.notice = "没有找到有效的链接，链接需要以 http:// 或 https:// 开头。"
 		return
 	}
-	preset := formats.PresetByLabel(a.q.presetLabel).ID
-	for _, u := range urls {
-		a.queue.Add(u, engine.AddOptions{Preset: preset, Start: start})
-	}
+	a.queueLinks(urls, formats.PresetByLabel(a.q.presetLabel).ID, start)
 	a.q.link = ""
 	a.q.notice = ""
 	if skipped > 0 {
@@ -82,12 +90,80 @@ func (a *App) AddDropped(text string) int {
 	if a.queue == nil {
 		return 0
 	}
-	start := a.settings().Input.AutoDownload
-	preset := formats.PresetByLabel(a.q.presetLabel).ID
-	for _, u := range urls {
-		a.queue.Add(u, engine.AddOptions{Preset: preset, Start: start})
-	}
+	a.queueLinks(urls, formats.PresetByLabel(a.q.presetLabel).ID, a.settings().Input.AutoDownload)
 	return len(urls)
+}
+
+// queueLinks adds links; links to a video in a playlist follow the setting,
+// or wait for the user's choice.
+func (a *App) queueLinks(urls []string, preset string, start bool) {
+	setting := a.settings().Input.MixedLinks
+	for _, u := range urls {
+		if mixed, _ := formats.MixedLink(u); mixed && setting != formats.MixedVideo && setting != formats.MixedList {
+			a.q.mixed = append(a.q.mixed, pendingLink{url: u, preset: preset, start: start})
+			continue
+		}
+		a.queue.Add(u, engine.AddOptions{Preset: preset, Start: start, Playlist: formats.MixedMode(u, setting)})
+	}
+}
+
+// mixedDialog asks whether a link to a video in a playlist adds the video
+// or the whole playlist.
+func (a *App) mixedDialog(c *ui.Context, p palette) {
+	if len(a.q.mixed) == 0 {
+		return
+	}
+	open := true
+	link := a.q.mixed[0]
+	_, mix := formats.MixedLink(link.url)
+	choose := func(mode string) {
+		take := 1
+		if a.q.mixedRemember {
+			take = len(a.q.mixed)
+			if mode != "" && a.deps.UpdateSettings != nil {
+				_ = a.deps.UpdateSettings(func(s *config.Settings) { s.Input.MixedLinks = mode })
+			}
+		}
+		if mode != "" {
+			for _, l := range a.q.mixed[:take] {
+				a.queue.Add(l.url, engine.AddOptions{Preset: l.preset, Start: l.start, Playlist: formats.MixedMode(l.url, mode)})
+			}
+		}
+		a.q.mixed = a.q.mixed[take:]
+		if len(a.q.mixed) == 0 {
+			a.q.mixedRemember = false
+		}
+	}
+	ui.Modal(c, &open, func() {
+		ui.Column(c).Width(460).Gap(sectionGap).Padding(20).AlignItems(ui.Stretch).Children(func() {
+			ui.Text(c, "这个链接同时包含视频和播放列表").FontSize(16).Bold()
+			ui.Text(c, link.url).FontSize(12).TextColor(p.muted).Wrap()
+			if mix {
+				ui.Text(c, "这是 YouTube 根据视频自动生成的合辑，可以无限往下播，整个列表可能有几百个视频。").FontSize(13).Wrap()
+			} else {
+				ui.Text(c, "可以只下载这个视频，也可以下载它所在的整个播放列表。").FontSize(13).Wrap()
+			}
+			remember := "记住我的选择，以后不再询问"
+			if len(a.q.mixed) > 1 {
+				remember = fmt.Sprintf("记住我的选择（也用于剩下的 %d 个链接）", len(a.q.mixed)-1)
+			}
+			ui.Checkbox(c, &a.q.mixedRemember, remember)
+			ui.Row(c).Gap(8).Justify(ui.End).Children(func() {
+				if ui.Button(c, "取消").Height(controlHeight).Padding(0, 16).Clicked() {
+					choose("")
+				}
+				if ui.Button(c, "下载整个列表").Height(controlHeight).Padding(0, 16).Clicked() {
+					choose(formats.MixedList)
+				}
+				if ui.PrimaryButton(c, "只下载这个视频").Height(controlHeight).Padding(0, 16).Clicked() {
+					choose(formats.MixedVideo)
+				}
+			})
+		})
+	})
+	if !open { // closed with Escape or a click outside
+		choose("")
+	}
 }
 
 // addExisting queues subtitles for a video downloaded before and shows the
@@ -187,6 +263,7 @@ func (a *App) queuePage(c *ui.Context, p palette) {
 		})
 	})
 	a.selectionDialog(c, p)
+	a.mixedDialog(c, p)
 }
 
 func (a *App) findJob(id string) (engine.JobView, bool) {
