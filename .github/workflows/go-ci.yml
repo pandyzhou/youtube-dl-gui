@@ -1,13 +1,13 @@
 name: Go CI
 
-# Checks for the MyGo rewrite: formatting, vet, unit and UI tests. The UI
+# Checks: formatting, vet, unit and UI tests. The UI
 # tests also render screenshots of the main pages, uploaded as the
 # go-screenshots artifact for review.
 
 on:
   workflow_dispatch:
   push:
-    branches: [mygo]
+    branches: [main, mygo]
   pull_request:
     branches: [main]
     paths:

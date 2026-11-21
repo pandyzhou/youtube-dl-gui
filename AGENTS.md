@@ -1,28 +1,16 @@
 # AGENTS
 
 ## Overview
-This project uses Vue 3 with TypeScript for the frontend and Rust for the backend.
-Vue code lives in `src/` and `src/components`, while the Rust Tauri backend lives in `src-tauri/`.
+Open Video Downloader is a Go app with a native MyGo UI (Windows x64, Simplified Chinese).
+The entry point is `cmd/ovd`; everything else lives in `internal/`:
+`config` (settings, legacy import), `ytdlp` (arguments, parsing), `binaries` (tool installs),
+`engine` (queue), `formats` (presets, inputs), `translate` (AI bilingual subtitles), `ui` (interface).
 
-## Testing
-Before committing changes, run the following commands:
-
-### JavaScript/TypeScript
-- `npm run lint:fix` to apply ESLint fixes and formatting.
-- `npm run test:unit` to run unit tests.
-- `npm run test:e2e` to run end-to-end tests.
-- `npm run build` to ensure the app builds.
-
-To run e2e tests locally, install Playwright browsers and required system packages:
-
-- `npx playwright install --with-deps`
-
-### Rust (inside `src-tauri/`)
-- `cargo fmt --all` to format Rust code.
-- `cargo clippy --all-targets -- -D warnings` to lint.
-- `cargo test` to run backend tests.
-
-Rust linting and tests may fail in this environment because the `glib-2.0` system library is missing.
+## Building and testing
+Builds, vet, gofmt and tests run on GitHub Actions only; do not run go locally.
+- `Go CI` checks formatting (gofmt), runs `go vet` (also for Windows) and the tests,
+  and uploads UI screenshots as the `go-screenshots` artifact.
+- `MyGo build (Windows)` builds a preview artifact on branches and publishes a release from `main`.
 
 ## Searching
 Use `rg` for searching the codebase; avoid recursive `grep` or `ls` commands.
