@@ -73,6 +73,13 @@ jobs:
       - name: go vet
         run: go vet ./...
 
+      # The tests run on Linux; this compiles and vets the Windows-only code
+      # (Job Objects, CREATE_NO_WINDOW) too.
+      - name: go vet (windows)
+        env:
+          GOOS: windows
+        run: go vet ./...
+
       - name: Tests
         env:
           SCREENSHOT_DIR: ${{ github.workspace }}/screenshots
