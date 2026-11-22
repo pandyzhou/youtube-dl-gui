@@ -194,6 +194,9 @@ func main() {
 			Content:   ui.View(app.View),
 			Hidden:    hidden,
 		})
+		// Keep the accent colours and the sidebar's Mica when another window has
+		// the keyboard: progress bars and buttons no longer fade to grey.
+		win.SetActiveAppearance(true)
 		window.Store(win)
 		win.OnClose(d.onClose)
 		d.apply()
