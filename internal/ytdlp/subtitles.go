@@ -110,9 +110,13 @@ func preferredAutoLanguages(automatic []string) []autoPreference {
 		if hasOrig && p.orig == "" {
 			continue
 		}
-		request := p.plain
+		// The -orig track is what YouTube's speech recognition heard; the
+		// plain one of the same language is YouTube's machine translation
+		// of it, which YouTube rate-limits hard (HTTP 429), so the original
+		// comes first.
+		request := p.orig
 		if request == "" {
-			request = p.orig
+			request = p.plain
 		}
 		out = append(out, autoPreference{request: request, base: base})
 	}

@@ -205,7 +205,8 @@ func subtitleFiles(parts string) []Track {
 	var out []Track
 	for _, e := range entries {
 		if m := subtitleName.FindStringSubmatch(e.Name()); m != nil {
-			out = append(out, Track{Path: filepath.Join(parts, e.Name()), Title: m[1], Language: m[1]})
+			lang := strings.TrimSuffix(m[1], "-orig")
+			out = append(out, Track{Path: filepath.Join(parts, e.Name()), Title: lang, Language: lang})
 		}
 	}
 	sort.Slice(out, func(a, b int) bool { return out[a].Path < out[b].Path })

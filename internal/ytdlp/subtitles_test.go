@@ -85,8 +85,8 @@ func TestSubtitlesAutoSelection(t *testing.T) {
 	}{
 		{"manual and auto match", []string{"en"}, []string{"en"}, "en"},
 		{"orig auto caption", nil, []string{"en-orig"}, "en-orig"},
-		{"plain over orig", nil, []string{"en", "en-orig"}, "en"},
-		{"translations ignored", nil, []string{"en", "en-orig", "de", "fr"}, "en"},
+		{"orig over the translated track", nil, []string{"en", "en-orig"}, "en-orig"},
+		{"translations ignored", nil, []string{"en", "en-orig", "de", "fr"}, "en-orig"},
 	}
 	for _, c := range cases {
 		args := SubtitleArgs(s, inv(c.manual, c.auto))
