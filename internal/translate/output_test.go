@@ -65,7 +65,7 @@ func TestEmbedArgs(t *testing.T) {
 			t.Errorf("mkv args missing %q:\n%s", want, mkv)
 		}
 	}
-	if !strings.HasSuffix(mkv, " out.mkv") || !strings.Contains(mkv, "-progress pipe:1") {
+	if !strings.HasSuffix(mkv, " -max_interleave_delta 0 out.mkv") || !strings.Contains(mkv, "-progress pipe:1") {
 		t.Errorf("mkv args %s", mkv)
 	}
 	mp4 := strings.Join(embedArgs("v.mp4", "s.ass", "s.srt", "out.mp4", videoProbe{}, false), " ")

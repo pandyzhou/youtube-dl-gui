@@ -156,7 +156,10 @@ func embedArgs(video, ass, srt, out string, probe videoProbe, styled bool) []str
 		args = append(args, fmt.Sprintf("-c:s:%d", kept), "mov_text")
 		track(kept, trackPlain, "default")
 	}
-	return append(args, out)
+	// With the default limit ffmpeg 6.1 wrote nearly all of the new
+	// subtitles at the end of the file, where players do not find them
+	// while playing; without a limit they sit beside the video they go with.
+	return append(args, "-max_interleave_delta", "0", out)
 }
 
 func isOurTrack(title string) bool {
