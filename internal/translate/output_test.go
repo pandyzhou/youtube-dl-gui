@@ -21,8 +21,11 @@ func TestWriteASS(t *testing.T) {
 		"PlayResX: 2560\nPlayResY: 1440\n",
 		"Style: ZH,Microsoft YaHei,76,",
 		",2,120,120,70,1\n",
-		"Dialogue: 0,0:00:01.00,0:00:02.50,ZH,,0,0,0,,你好\\N{\\rEN}Hello (there)\n",
-		"Dialogue: 0,1:02:03.45,1:02:04.00,EN,,0,0,0,,[music]\n",
+		"Style: ZHBox,Microsoft YaHei,76,&HFF000000,&HFF000000,&H40000000,",
+		"Dialogue: 0,0:00:01.00,0:00:02.50,ZHBox,,0,0,0,,你好\\N{\\rENBox}Hello (there)\n",
+		"Dialogue: 1,0:00:01.00,0:00:02.50,ZH,,0,0,0,,你好\\N{\\rEN}Hello (there)\n",
+		"Dialogue: 0,1:02:03.45,1:02:04.00,ENBox,,0,0,0,,[music]\n",
+		"Dialogue: 1,1:02:03.45,1:02:04.00,EN,,0,0,0,,[music]\n",
 	} {
 		if !strings.Contains(got, want) {
 			t.Errorf("missing %q in\n%s", want, got)

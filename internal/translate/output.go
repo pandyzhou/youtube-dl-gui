@@ -235,12 +235,18 @@ func parseProbe(data []byte) videoProbe {
 }
 
 // The ASS styles: sizes are for a 1440-pixel-high script and scale with
-// the video, so subtitles look the same at 720p and 4K.
+// the video, so subtitles look the same at 720p and 4K. The Box styles
+// are the same text, invisible, on a dark see-through box (border style
+// 3), drawn under the outlined text so it reads over text in the video.
 const assStyles = `Style: ZH,Microsoft YaHei,76,&H00FFFFFF,&H000000FF,&H00000000,&H96000000,-1,0,0,0,100,100,1,0,1,4.5,2,2,%[1]d,%[1]d,70,1
-Style: EN,Arial,50,&H00D8F0FF,&H000000FF,&H00000000,&H96000000,0,0,0,0,100,100,0,0,1,3.5,1.5,2,%[1]d,%[1]d,70,1`
+Style: EN,Arial,50,&H00D8F0FF,&H000000FF,&H00000000,&H96000000,0,0,0,0,100,100,0,0,1,3.5,1.5,2,%[1]d,%[1]d,70,1
+Style: ZHBox,Microsoft YaHei,76,&HFF000000,&HFF000000,&H40000000,&HFF000000,-1,0,0,0,100,100,1,0,3,10,0,2,%[1]d,%[1]d,70,1
+Style: ENBox,Arial,50,&HFF000000,&HFF000000,&H40000000,&HFF000000,0,0,0,0,100,100,0,0,3,10,0,2,%[1]d,%[1]d,70,1`
 
 // WriteASS writes cues as styled ASS: the translation in large white
-// letters with a black outline, the original smaller under it.
+// letters with a black outline, the original smaller under it, both on a
+// dark box. Each cue is two events: the box on layer 0 and the text on
+// layer 1, which lay out alike and so sit on each other.
 func WriteASS(cues []Cue, translations []string, width, height int) string {
 	playX := 2560
 	if width > 0 && height > 0 {
@@ -260,11 +266,13 @@ func WriteASS(cues []Cue, translations []string, width, height int) string {
 			continue
 		}
 		original := assText(cue.Text)
-		text, style := original, "EN"
+		text, box, style := original, original, "EN"
 		if i < len(translations) && strings.TrimSpace(translations[i]) != "" {
-			text, style = assText(translations[i])+`\N{\rEN}`+original, "ZH"
+			translation := assText(translations[i])
+			text, box, style = translation+`\N{\rEN}`+original, translation+`\N{\rENBox}`+original, "ZH"
 		}
-		fmt.Fprintf(&b, "Dialogue: 0,%s,%s,%s,,0,0,0,,%s\n", start, end, style, text)
+		fmt.Fprintf(&b, "Dialogue: 0,%s,%s,%sBox,,0,0,0,,%s\n", start, end, style, box)
+		fmt.Fprintf(&b, "Dialogue: 1,%s,%s,%s,,0,0,0,,%s\n", start, end, style, text)
 	}
 	return b.String()
 }
