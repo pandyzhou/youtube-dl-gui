@@ -497,9 +497,13 @@ type Source struct {
 
 // PickSource picks the creator's subtitles in the spoken language when
 // there are any, otherwise the automatic captions in the original
-// language. Videos already in Chinese are skipped. The spoken language is
-// that of the original automatic captions; without those it is spoken, the
-// language the site names for the video, which may be "".
+// language. Videos already in Chinese are skipped. spoken is the language
+// the site names for the video, which may be "".
+//
+// A video YouTube dubbed has original captions ("-orig") for every dubbed
+// language, and creators upload subtitles in many languages; both lists
+// are alphabetical. So the spoken language is taken first, then English,
+// before whichever comes first.
 func PickSource(inv ytdlp.SubtitleInventory, spoken string) (Source, bool) {
 	manualFor := func(base string) (string, bool) {
 		for _, l := range inv.ManualLanguages {
@@ -509,25 +513,35 @@ func PickSource(inv ytdlp.SubtitleInventory, spoken string) (Source, bool) {
 		}
 		return "", false
 	}
+	spoken = languageBase(strings.ToLower(strings.TrimSpace(spoken)))
+	if spoken == "zh" {
+		return Source{}, false
+	}
+	var originals []string
 	for _, l := range inv.AutoLanguages {
-		if !strings.HasSuffix(l, "-orig") {
-			continue
+		if strings.HasSuffix(l, "-orig") {
+			originals = append(originals, l)
 		}
-		base := languageBase(l)
+	}
+	if len(originals) > 0 {
+		original := originals[0]
+	pick:
+		for _, base := range []string{spoken, "en"} {
+			for _, l := range originals {
+				if languageBase(l) == base {
+					original = l
+					break pick
+				}
+			}
+		}
+		base := languageBase(original)
 		if base == "zh" {
 			return Source{}, false
 		}
 		if manual, ok := manualFor(base); ok {
 			return Source{Language: manual}, true
 		}
-		return Source{Language: l, Automatic: true}, true
-	}
-	// No original captions. The creator's subtitles are often translations
-	// into many languages, listed alphabetically: take the spoken language,
-	// then English, before whichever comes first.
-	spoken = languageBase(strings.ToLower(strings.TrimSpace(spoken)))
-	if spoken == "zh" {
-		return Source{}, false
+		return Source{Language: original, Automatic: true}, true
 	}
 	for _, base := range []string{spoken, "en"} {
 		if manual, ok := manualFor(base); ok && base != "" {
@@ -535,7 +549,8 @@ func PickSource(inv ytdlp.SubtitleInventory, spoken string) (Source, bool) {
 		}
 	}
 	for _, l := range inv.ManualLanguages {
-		if languageBase(l) != "zh" {
+		// YouTube lists a stream's chat replay among the subtitles.
+		if languageBase(l) != "zh" && l != "live_chat" {
 			return Source{Language: l}, true
 		}
 	}

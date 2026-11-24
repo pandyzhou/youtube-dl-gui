@@ -70,6 +70,23 @@ func TestPickSource(t *testing.T) {
 	if _, ok := PickSource(inv(many, nil), "zh-Hans"); ok {
 		t.Error("Chinese video with translated subtitles picked")
 	}
+	// A video YouTube dubbed: original captions in every dubbed language.
+	dubbed := []string{"ar", "ar-orig", "bn", "bn-orig", "en", "en-orig", "ja", "ja-orig", "zh-hans"}
+	if s, ok := PickSource(inv([]string{"live_chat"}, dubbed), "en-us"); !ok || s != (Source{"en-orig", true}) {
+		t.Errorf("dubbed, spoken language: %+v %v", s, ok)
+	}
+	if s, ok := PickSource(inv(nil, dubbed), "ja"); !ok || s != (Source{"ja-orig", true}) {
+		t.Errorf("dubbed, Japanese video: %+v %v", s, ok)
+	}
+	if s, ok := PickSource(inv(nil, dubbed), ""); !ok || s != (Source{"en-orig", true}) {
+		t.Errorf("dubbed, language unknown: %+v %v", s, ok)
+	}
+	if s, ok := PickSource(inv(nil, []string{"ar-orig", "bn-orig"}), "fr"); !ok || s != (Source{"ar-orig", true}) {
+		t.Errorf("dubbed, first as the last resort: %+v %v", s, ok)
+	}
+	if _, ok := PickSource(inv([]string{"live_chat"}, nil), ""); ok {
+		t.Error("chat replay picked")
+	}
 }
 
 func TestChatCompletionsURL(t *testing.T) {
