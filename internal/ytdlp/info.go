@@ -22,6 +22,7 @@ type Info struct {
 	ViewCount         *int64                    `json:"view_count"`
 	CommentCount      *int64                    `json:"comment_count"`
 	Description       string                    `json:"description"`
+	Language          string                    `json:"language"`
 	ExtractorKey      string                    `json:"extractor_key"`
 	Thumbnail         string                    `json:"thumbnail"`
 	Thumbnails        []InfoThumbnail           `json:"thumbnails"`
@@ -160,8 +161,10 @@ type Video struct {
 	AudioTracks       []Track           `json:"audioTracks"`
 	Formats           []Format          `json:"formats"`
 	SubtitleInventory SubtitleInventory `json:"subtitleInventory"`
-	Chapters          []Chapter         `json:"chapters"`
-	Filesize          *int64            `json:"filesize,omitempty"`
+	// Language is the spoken language, as the site names it ("en"), or "".
+	Language string    `json:"language,omitempty"`
+	Chapters []Chapter `json:"chapters"`
+	Filesize *int64    `json:"filesize,omitempty"`
 }
 
 // PlaylistEntry is a video of a playlist; Index counts from 0 in the order
@@ -237,6 +240,7 @@ func parseSingle(info *Info) *Video {
 			ManualLanguages: subtitleLanguages(info.Subtitles),
 			AutoLanguages:   subtitleLanguages(info.AutomaticCaptions),
 		},
+		Language: strings.ToLower(strings.TrimSpace(info.Language)),
 		Chapters: parseChapters(info.Chapters),
 	}
 	if info.Filesize != nil {

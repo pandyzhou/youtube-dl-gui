@@ -47,14 +47,28 @@ func inv(manual, auto []string) ytdlp.SubtitleInventory {
 }
 
 func TestPickSource(t *testing.T) {
-	if s, ok := PickSource(inv(nil, []string{"en", "en-orig", "zh-hans"})); !ok || s != (Source{"en-orig", true}) {
+	if s, ok := PickSource(inv(nil, []string{"en", "en-orig", "zh-hans"}), ""); !ok || s != (Source{"en-orig", true}) {
 		t.Errorf("original captions: %+v %v", s, ok)
 	}
-	if s, ok := PickSource(inv([]string{"en-us"}, []string{"en-orig", "zh-hans"})); !ok || s != (Source{"en-us", false}) {
+	if s, ok := PickSource(inv([]string{"en-us"}, []string{"en-orig", "zh-hans"}), ""); !ok || s != (Source{"en-us", false}) {
 		t.Errorf("creator subtitles: %+v %v", s, ok)
 	}
-	if _, ok := PickSource(inv(nil, []string{"zh-hans-orig", "en"})); ok {
+	if _, ok := PickSource(inv(nil, []string{"zh-hans-orig", "en"}), ""); ok {
 		t.Error("Chinese video picked")
+	}
+	// No original captions, and the creator's subtitles in many languages.
+	many := []string{"ar", "bn", "en", "es", "ja"}
+	if s, ok := PickSource(inv(many, nil), ""); !ok || s != (Source{"en", false}) {
+		t.Errorf("English over the first language: %+v %v", s, ok)
+	}
+	if s, ok := PickSource(inv(many, nil), "ja"); !ok || s != (Source{"ja", false}) {
+		t.Errorf("spoken language: %+v %v", s, ok)
+	}
+	if s, ok := PickSource(inv([]string{"bn", "de"}, nil), "fr"); !ok || s != (Source{"bn", false}) {
+		t.Errorf("first language as the last resort: %+v %v", s, ok)
+	}
+	if _, ok := PickSource(inv(many, nil), "zh-Hans"); ok {
+		t.Error("Chinese video with translated subtitles picked")
 	}
 }
 

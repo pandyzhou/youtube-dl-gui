@@ -253,10 +253,11 @@ func prepare(ctx context.Context, env Env, url, title string, video *ytdlp.Video
 		return nil, err
 	}
 	var inventory ytdlp.SubtitleInventory
+	spoken := ""
 	if video != nil {
-		inventory = video.SubtitleInventory
+		inventory, spoken = video.SubtitleInventory, video.Language
 	}
-	source, ok := PickSource(inventory)
+	source, ok := PickSource(inventory, spoken)
 	if !ok {
 		return nil, &failure{CodeSourceMissing, "这个视频没有可翻译的字幕（或已经是中文）。"}
 	}
@@ -496,8 +497,10 @@ type Source struct {
 
 // PickSource picks the creator's subtitles in the spoken language when
 // there are any, otherwise the automatic captions in the original
-// language. Videos already in Chinese are skipped.
-func PickSource(inv ytdlp.SubtitleInventory) (Source, bool) {
+// language. Videos already in Chinese are skipped. The spoken language is
+// that of the original automatic captions; without those it is spoken, the
+// language the site names for the video, which may be "".
+func PickSource(inv ytdlp.SubtitleInventory, spoken string) (Source, bool) {
 	manualFor := func(base string) (string, bool) {
 		for _, l := range inv.ManualLanguages {
 			if languageBase(l) == base {
@@ -518,6 +521,18 @@ func PickSource(inv ytdlp.SubtitleInventory) (Source, bool) {
 			return Source{Language: manual}, true
 		}
 		return Source{Language: l, Automatic: true}, true
+	}
+	// No original captions. The creator's subtitles are often translations
+	// into many languages, listed alphabetically: take the spoken language,
+	// then English, before whichever comes first.
+	spoken = languageBase(strings.ToLower(strings.TrimSpace(spoken)))
+	if spoken == "zh" {
+		return Source{}, false
+	}
+	for _, base := range []string{spoken, "en"} {
+		if manual, ok := manualFor(base); ok && base != "" {
+			return Source{Language: manual}, true
+		}
 	}
 	for _, l := range inv.ManualLanguages {
 		if languageBase(l) != "zh" {
